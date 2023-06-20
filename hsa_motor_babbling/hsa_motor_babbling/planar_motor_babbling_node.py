@@ -9,35 +9,6 @@ class PlanarMotorBabblingNode(Node):
     def __init__(self):
         super().__init__("planar_kinematic_control_node")
 
-        self.node_frequency = 100 # Hz
-
-        self.seed = 0
-        self.mode = "gbn"
-        self.duration = 45  # [s]
-        self.dt = 1 / self.node_frequency
-        self.phi_max = np.pi / 2  # [deg]
-
-        if self.mode == "gbn":
-            from pygbn import gbn
-
-            gbn_ts = 2 # mean settling time of process
-
-            # flag indicating process damping properties
-            # gbn_flag = 0 if the process is over-damped (default)
-            # gbn_flag = 1 if the process is oscillary (min phase)
-            # gbn_flag = 2 if the process is oscillary (non min phase)
-            gbn_flag = 0
-
-            # generate the signal
-            # the gbn function returns a time array and a signal array
-            u_ts = np.zeros((4, int(self.duration / self.dt)))
-            for motor_idx in range(4):
-                u_ts[motor_idx, :] = gbn(self.dt, self.duration, self.phi_max, gbn_ts, gbn_flag, seed=self.seed + motor_idx)
-
-                print("u", u_ts[motor_idx, :])
-        
-        exit()
-
         self.motor_pos_cli = self.create_client(GetPosition, "/get_position")
         self.motor_pos_cli.wait_for_service()
 
@@ -49,12 +20,13 @@ class PlanarMotorBabblingNode(Node):
 
         self.node_frequency = 100 # Hz
         self.timer = self.create_timer(1.0/self.node_frequency, self.timer_callback)
+        self.time_idx = 0
 
         self.seed = 0
         self.mode = "gbn"
         self.duration = 45  # [s]
         self.dt = 1 / self.node_frequency
-        self.phi_max = np.pi / 2  # [deg]
+        self.phi_max = np.pi / 4  # [deg]
 
         if self.mode == "gbn":
             from pygbn import gbn
@@ -69,21 +41,25 @@ class PlanarMotorBabblingNode(Node):
 
             # generate the signal
             # the gbn function returns a time array and a signal array
-            u = gbn(self.dt, self.duration, self.phi_max, gbn_ts, gbn_flag, seed=self.seed)
-
-            print("u", u)
+            self.u_ts = np.zeros((2, int(self.duration / self.dt)))
+            for motor_idx in range(2):
+                u_gbn = gbn(self.dt, self.duration, 1.0, gbn_ts, gbn_flag, seed=self.seed + motor_idx)
+                self.u_ts[motor_idx, :] = (1 + u_gbn) / 2 * self.phi_max
 
 
     def timer_callback(self, event=None):
-        # print("timer_callback", type(event), event)
-        self.dummy_time_idx += 1
-        if self.dummy_time_idx == 500:
-            print("dummy_time_idx", self.dummy_time_idx)
-            new_motor_positions = self.motor_neutral_position.copy()
-            new_motor_positions[0] += 20
-            print("New motor positions", new_motor_positions)
-            print("Neutral motor positions", self.motor_neutral_position)
-            self.set_motor_goal_positions(self.motor_neutral_position)
+        phi = [
+            self.u_ts[self.time_idx, 0] * self.rod_handedness[0],
+            self.u_ts[self.time_idx, 1] * self.rod_handedness[1],
+            self.u_ts[self.time_idx, 1] * self.rod_handedness[2],
+            self.u_ts[self.time_idx, 0] * self.rod_handedness[3]
+        ]
+
+        motor_position = self.motor_neutral_position + phi
+
+        self.set_motor_goal_positions(motor_position)
+
+        self.time_idx += 1
 
     def get_motor_positions(self) -> np.ndarray:
         motor_positions = np.zeros(len(self.motor_ids), dtype=np.uint32)
