@@ -138,7 +138,7 @@ ReadWriteNode::~ReadWriteNode()
 
 void setupDynamixel(uint8_t dxl_id)
 {
-  // Use Position Control Mode
+  // Use Extended Position Control Mode
   dxl_comm_result = packetHandler->write1ByteTxRx(
     portHandler,
     dxl_id,
@@ -148,9 +148,9 @@ void setupDynamixel(uint8_t dxl_id)
   );
 
   if (dxl_comm_result != COMM_SUCCESS) {
-    RCLCPP_ERROR(rclcpp::get_logger("read_write_node"), "Failed to set Position Control Mode.");
+    RCLCPP_ERROR(rclcpp::get_logger("read_write_node"), "Failed to set Extended Position Control Mode.");
   } else {
-    RCLCPP_INFO(rclcpp::get_logger("read_write_node"), "Succeeded to set Position Control Mode.");
+    RCLCPP_INFO(rclcpp::get_logger("read_write_node"), "Succeeded to set Extended Position Control Mode.");
   }
 
   // Enable Torque of DYNAMIXEL
