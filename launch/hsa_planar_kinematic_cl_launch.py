@@ -13,7 +13,7 @@ def generate_launch_description():
             name='inverse_kinematics'
         ),
         Node(
-            package='dynamixel_sdk_examples',
+            package='dynamixel_control',
             executable='read_write_node',
             name='dynamixel_control'
         ),
