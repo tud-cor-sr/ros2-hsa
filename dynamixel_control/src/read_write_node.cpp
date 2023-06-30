@@ -68,14 +68,13 @@ ReadWriteNode::ReadWriteNode()
   int8_t qos_depth = 0;
   this->get_parameter("qos_depth", qos_depth);
 
-  this->declare_parameter("motor_ids", std::vector<uint8_t>());
-  std::vector<uint8_t> motor_ids;
+  std::vector<uint8_t> motor_ids{ 21, 22, 23, 24 };
+  this->declare_parameter("motor_ids", motor_ids);
   this->get_parameter("motor_ids", motor_ids);
 
   const auto QOS_RKL10V =
     rclcpp::QoS(rclcpp::KeepLast(qos_depth)).reliable().durability_volatile();
 
-  auto set_position_subscribers_ = std::vector<rclcpp::Subscription<SetPosition>::SharedPtr>();
   // loop over all motor ids and create a subscriber for each
   for (auto motor_id : motor_ids) {
     auto set_position_subscriber =
@@ -112,6 +111,7 @@ ReadWriteNode::ReadWriteNode()
       );
     set_position_subscribers_.push_back(set_position_subscriber);
   }
+
 
   auto get_present_position =
     [this](

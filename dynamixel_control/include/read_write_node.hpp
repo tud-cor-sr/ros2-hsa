@@ -36,7 +36,7 @@ public:
   virtual ~ReadWriteNode();
 
 private:
-  rclcpp::Subscription<SetPosition>::SharedPtr set_position_subscriber_;
+  std::vector<rclcpp::Subscription<SetPosition>::SharedPtr> set_position_subscribers_;
   rclcpp::Service<GetPosition>::SharedPtr get_position_server_;
 
   int present_position;
