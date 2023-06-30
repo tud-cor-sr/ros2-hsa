@@ -14,7 +14,7 @@ class PlanarMotorBabblingNode(Node):
         self.motor_pos_cli.wait_for_service()
 
         self.motor_ids = np.array([21, 22, 23, 24])
-        self.motor_neutral_position = self.get_motor_positions()
+        self.motor_neutral_positions = self.get_motor_positions()
         self.rod_handedness = np.array([-1.0, 1.0, -1.0, 1.0])
 
         self.motor_goal_pos_publishers = {}
@@ -23,7 +23,7 @@ class PlanarMotorBabblingNode(Node):
                 SetPosition, f"/set_position_motor_{motor_id}", 10
             )
 
-        self.node_frequency = 100  # Hz
+        self.node_frequency = 1  # Hz
         self.timer = self.create_timer(1.0 / self.node_frequency, self.timer_callback)
         self.time_idx = 0
 
@@ -31,7 +31,7 @@ class PlanarMotorBabblingNode(Node):
         self.mode = "gbn"
         self.duration = 45  # [s]
         self.dt = 1 / self.node_frequency
-        self.phi_max = np.pi / 4  # [deg]
+        self.phi_max = np.pi  # [deg]
 
         if self.mode == "gbn":
             from pygbn import gbn
@@ -59,8 +59,6 @@ class PlanarMotorBabblingNode(Node):
                 self.u_ts[:, motor_idx] = (1 + u_gbn) / 2 * self.phi_max
         else:
             raise ValueError("Unknown mode.")
-        
-        self.get_logger().info(f"u_ts: {self.u_ts.shape}")
 
     def timer_callback(self, event=None):
         if self.time_idx >= self.u_ts.shape[0]:
@@ -68,18 +66,26 @@ class PlanarMotorBabblingNode(Node):
             self.destroy_timer(self.timer)
             return
 
-        phi = [
+        phi = np.stack([
             self.u_ts[self.time_idx, 0] * self.rod_handedness[0],
             self.u_ts[self.time_idx, 1] * self.rod_handedness[1],
             self.u_ts[self.time_idx, 1] * self.rod_handedness[2],
             self.u_ts[self.time_idx, 0] * self.rod_handedness[3],
-        ]
+        ])
 
-        motor_position = self.motor_neutral_position + phi
-
-        self.set_motor_goal_positions(motor_position)
+        self.set_motor_goal_angles(phi)
 
         self.time_idx += 1
+
+    def get_motor_angles(self) -> np.ndarray:
+        motor_positions = self.get_motor_positions()
+        motor_angles = (motor_positions - self.motor_neutral_positions) / 2048 * np.pi
+        return motor_angles
+    
+    def set_motor_goal_angles(self, goal_angles: np.ndarray):
+        motor_goal_positions = self.motor_neutral_positions + goal_angles / np.pi * 2048
+        self.set_motor_goal_positions(motor_goal_positions)
+        return
 
     def get_motor_positions(self) -> np.ndarray:
         motor_positions = np.zeros(len(self.motor_ids), dtype=np.uint32)
@@ -100,8 +106,6 @@ class PlanarMotorBabblingNode(Node):
             msg = SetPosition()
             msg.id = int(motor_id)
             msg.position = int(goal_positions[motor_idx].item())
-
-            self.get_logger().info(f"motor_id: {motor_id}, goal_position: {msg.position}")
 
             self.motor_goal_pos_publishers[motor_id].publish(msg)
 
