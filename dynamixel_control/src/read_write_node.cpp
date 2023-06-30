@@ -18,7 +18,7 @@
 // To test this example, please follow the commands below.
 //
 // Open terminal #1
-// $ ros2 run dynamixel_sdk_examples read_write_node
+// $ ros2 run dynamixel_control read_write_node
 //
 // Open terminal #2 (run one of below commands at a time)
 // $ ros2 topic pub -1 /set_position dynamixel_sdk_custom_interfaces/SetPosition "{id: 1, position: 1000}"
@@ -68,41 +68,50 @@ ReadWriteNode::ReadWriteNode()
   int8_t qos_depth = 0;
   this->get_parameter("qos_depth", qos_depth);
 
+  this->declare_parameter("motor_ids", std::vector<uint8_t>());
+  std::vector<uint8_t> motor_ids;
+  this->get_parameter("motor_ids", motor_ids);
+
   const auto QOS_RKL10V =
     rclcpp::QoS(rclcpp::KeepLast(qos_depth)).reliable().durability_volatile();
 
-  set_position_subscriber_ =
-    this->create_subscription<SetPosition>(
-    "set_position",
-    QOS_RKL10V,
-    [this](const SetPosition::SharedPtr msg) -> void
-    {
-      uint8_t dxl_error = 0;
+  auto set_position_subscribers_ = std::vector<rclcpp::Subscription<SetPosition>::SharedPtr>();
+  // loop over all motor ids and create a subscriber for each
+  for (auto motor_id : motor_ids) {
+    auto set_position_subscriber =
+      this->create_subscription<SetPosition>(
+      "set_position_motor_" + std::to_string(motor_id),
+      QOS_RKL10V,
+      [this, motor_id](const SetPosition::SharedPtr msg) -> void
+      {
+        uint8_t dxl_error = 0;
 
-      // Position Value of X series is 4 byte data.
-      // For AX & MX(1.0) use 2 byte data(uint16_t) for the Position Value.
-      uint32_t goal_position = (unsigned int)msg->position;  // Convert int32 -> uint32
+        // Position Value of X series is 4 byte data.
+        // For AX & MX(1.0) use 2 byte data(uint16_t) for the Position Value.
+        uint32_t goal_position = (unsigned int)msg->position;  // Convert int32 -> uint32
 
-      // Write Goal Position (length : 4 bytes)
-      // When writing 2 byte data to AX / MX(1.0), use write2ByteTxRx() instead.
-      dxl_comm_result =
-      packetHandler->write4ByteTxRx(
-        portHandler,
-        (uint8_t) msg->id,
-        ADDR_GOAL_POSITION,
-        goal_position,
-        &dxl_error
-      );
+        // Write Goal Position (length : 4 bytes)
+        // When writing 2 byte data to AX / MX(1.0), use write2ByteTxRx() instead.
+        dxl_comm_result =
+        packetHandler->write4ByteTxRx(
+          portHandler,
+          (uint8_t) msg->id,
+          ADDR_GOAL_POSITION,
+          goal_position,
+          &dxl_error
+        );
 
-      if (dxl_comm_result != COMM_SUCCESS) {
-        RCLCPP_INFO(this->get_logger(), "%s", packetHandler->getTxRxResult(dxl_comm_result));
-      } else if (dxl_error != 0) {
-        RCLCPP_INFO(this->get_logger(), "%s", packetHandler->getRxPacketError(dxl_error));
-      } else {
-        RCLCPP_INFO(this->get_logger(), "Set [ID: %d] [Goal Position: %d]", msg->id, msg->position);
+        if (dxl_comm_result != COMM_SUCCESS) {
+          RCLCPP_INFO(this->get_logger(), "%s", packetHandler->getTxRxResult(dxl_comm_result));
+        } else if (dxl_error != 0) {
+          RCLCPP_INFO(this->get_logger(), "%s", packetHandler->getRxPacketError(dxl_error));
+        } else {
+          RCLCPP_INFO(this->get_logger(), "Set [ID: %d] [Goal Position: %d]", msg->id, msg->position);
+        }
       }
-    }
-    );
+      );
+    set_position_subscribers_.push_back(set_position_subscriber);
+  }
 
   auto get_present_position =
     [this](

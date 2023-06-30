@@ -5,6 +5,7 @@ from rclpy.node import Node
 from dynamixel_sdk_custom_interfaces.msg import SetPosition
 from dynamixel_sdk_custom_interfaces.srv import GetPosition
 
+
 class PlanarMotorBabblingNode(Node):
     def __init__(self):
         super().__init__("planar_kinematic_control_node")
@@ -14,12 +15,16 @@ class PlanarMotorBabblingNode(Node):
 
         self.motor_ids = np.array([21, 22, 23, 24])
         self.motor_neutral_position = self.get_motor_positions()
-        self.rod_handedness = np.array([-1., 1., -1., 1.])
+        self.rod_handedness = np.array([-1.0, 1.0, -1.0, 1.0])
 
-        self.motor_target_pos_pub = self.create_publisher(SetPosition, "/set_position", 10)
+        self.motor_goal_pos_publishers = {}
+        for motor_idx, motor_id in enumerate(list(self.motor_ids)):
+            self.motor_goal_pos_publishers[motor_id] = self.create_publisher(
+                SetPosition, f"/set_position_motor_{motor_id}", 10
+            )
 
-        self.node_frequency = 100 # Hz
-        self.timer = self.create_timer(1.0/self.node_frequency, self.timer_callback)
+        self.node_frequency = 100  # Hz
+        self.timer = self.create_timer(1.0 / self.node_frequency, self.timer_callback)
         self.time_idx = 0
 
         self.seed = 0
@@ -31,7 +36,7 @@ class PlanarMotorBabblingNode(Node):
         if self.mode == "gbn":
             from pygbn import gbn
 
-            gbn_ts = 2 # mean settling time of process
+            gbn_ts = 2  # mean settling time of process
 
             # flag indicating process damping properties
             # gbn_flag = 0 if the process is over-damped (default)
@@ -41,18 +46,33 @@ class PlanarMotorBabblingNode(Node):
 
             # generate the signal
             # the gbn function returns a time array and a signal array
-            self.u_ts = np.zeros((2, int(self.duration / self.dt)))
+            self.u_ts = np.zeros((int(self.duration / self.dt), 2))
             for motor_idx in range(2):
-                u_gbn = gbn(self.dt, self.duration, 1.0, gbn_ts, gbn_flag, seed=self.seed + motor_idx)
-                self.u_ts[motor_idx, :] = (1 + u_gbn) / 2 * self.phi_max
-
+                u_gbn = gbn(
+                    self.dt,
+                    self.duration,
+                    1.0,
+                    gbn_ts,
+                    gbn_flag,
+                    seed=self.seed + motor_idx,
+                )
+                self.u_ts[:, motor_idx] = (1 + u_gbn) / 2 * self.phi_max
+        else:
+            raise ValueError("Unknown mode.")
+        
+        self.get_logger().info(f"u_ts: {self.u_ts.shape}")
 
     def timer_callback(self, event=None):
+        if self.time_idx >= self.u_ts.shape[0]:
+            self.get_logger().info("Finished trajectory.")
+            self.destroy_timer(self.timer)
+            return
+
         phi = [
             self.u_ts[self.time_idx, 0] * self.rod_handedness[0],
             self.u_ts[self.time_idx, 1] * self.rod_handedness[1],
             self.u_ts[self.time_idx, 1] * self.rod_handedness[2],
-            self.u_ts[self.time_idx, 0] * self.rod_handedness[3]
+            self.u_ts[self.time_idx, 0] * self.rod_handedness[3],
         ]
 
         motor_position = self.motor_neutral_position + phi
@@ -66,29 +86,31 @@ class PlanarMotorBabblingNode(Node):
         for motor_idx, motor_id in enumerate(list(self.motor_ids)):
             req = GetPosition.Request()
             req.id = int(motor_id)
-            
+
             future = self.motor_pos_cli.call_async(req)
             rclpy.spin_until_future_complete(self, future)
             resp = future.result()
 
             motor_positions[motor_idx] = resp.position
-            
+
         return motor_positions
-    
+
     def set_motor_goal_positions(self, goal_positions: np.ndarray):
         for motor_idx, motor_id in enumerate(list(self.motor_ids)):
             msg = SetPosition()
             msg.id = int(motor_id)
             msg.position = int(goal_positions[motor_idx].item())
 
-            self.motor_target_pos_pub.publish(msg)
-            
+            self.get_logger().info(f"motor_id: {motor_id}, goal_position: {msg.position}")
+
+            self.motor_goal_pos_publishers[motor_id].publish(msg)
+
         return
 
 
 def main(args=None):
     rclpy.init(args=args)
-    print('Hi from hsa_motor_babbling.')
+    print("Hi from hsa_motor_babbling.")
 
     node = PlanarMotorBabblingNode()
 
@@ -101,5 +123,5 @@ def main(args=None):
     rclpy.shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
