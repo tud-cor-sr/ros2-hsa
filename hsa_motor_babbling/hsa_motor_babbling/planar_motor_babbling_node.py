@@ -15,6 +15,7 @@ class PlanarMotorBabblingNode(Node):
 
         self.motor_ids = np.array([21, 22, 23, 24])
         self.motor_neutral_positions = self.get_motor_positions()
+        self.current_motor_goal_positions = self.motor_neutral_positions.copy()
         self.rod_handedness = np.array([-1.0, 1.0, -1.0, 1.0])
 
         self.motor_goal_pos_publishers = {}
@@ -23,7 +24,7 @@ class PlanarMotorBabblingNode(Node):
                 SetPosition, f"/set_position_motor_{motor_id}", 10
             )
 
-        self.node_frequency = 1  # Hz
+        self.node_frequency = 100  # Hz
         self.timer = self.create_timer(1.0 / self.node_frequency, self.timer_callback)
         self.time_idx = 0
 
@@ -103,11 +104,14 @@ class PlanarMotorBabblingNode(Node):
 
     def set_motor_goal_positions(self, goal_positions: np.ndarray):
         for motor_idx, motor_id in enumerate(list(self.motor_ids)):
-            msg = SetPosition()
-            msg.id = int(motor_id)
-            msg.position = int(goal_positions[motor_idx].item())
+            motor_goal_position = goal_positions[motor_idx]
+            if motor_goal_position != self.current_motor_goal_positions[motor_idx]:
+                msg = SetPosition()
+                msg.id = int(motor_id)
+                msg.position = int(goal_positions[motor_idx].item())
 
-            self.motor_goal_pos_publishers[motor_id].publish(msg)
+                self.motor_goal_pos_publishers[motor_id].publish(msg)
+                self.current_motor_goal_positions[motor_idx] = motor_goal_position
 
         return
 
