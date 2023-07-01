@@ -132,13 +132,15 @@ SyncReadSingleWriteNode::SyncReadSingleWriteNode()
     const std::shared_ptr<GetPositions::Request> request,
     std::shared_ptr<GetPositions::Response> response) -> int
     {
+      // Initialize Groupsyncread instance for Present Position
+      groupSyncRead = std::make_shared<dynamixel::GroupSyncRead>(portHandler, packetHandler, ADDR_PRESENT_POSITION, LEN_PRESENT_POSITION);
 
       // Add parameter storage for each dynamixel motor id in request
       for (auto motor_id : request->ids) {
         dxl_addparam_result = groupSyncRead->addParam(motor_id);
         if (dxl_addparam_result != true)
         {
-          RCLCPP_ERROR(this->get_logger(), "[ID:%03d] groupSyncRead addparam failed", motor_id);
+          RCLCPP_ERROR(this->get_logger(), "[ID:%d] groupSyncRead addparam failed", motor_id);
           return 0;
         }
       }
@@ -154,7 +156,7 @@ SyncReadSingleWriteNode::SyncReadSingleWriteNode()
         dxl_getdata_result = groupSyncRead->isAvailable(motor_id, ADDR_PRESENT_POSITION, LEN_PRESENT_POSITION);
         if (dxl_getdata_result != true)
         {
-          RCLCPP_ERROR(this->get_logger(), "[ID:%03d] groupSyncRead getdata failed", motor_id);
+          RCLCPP_ERROR(this->get_logger(), "[ID:%d] groupSyncRead getdata failed", motor_id);
           return 0;
         }
 
@@ -221,8 +223,6 @@ int main(int argc, char * argv[])
 {
   portHandler = dynamixel::PortHandler::getPortHandler(DEVICE_NAME);
   packetHandler = dynamixel::PacketHandler::getPacketHandler(PROTOCOL_VERSION);
-  // Initialize Groupsyncread instance for Present Position
-  groupSyncRead = std::make_shared<dynamixel::GroupSyncRead>(portHandler, packetHandler, ADDR_PRESENT_POSITION, LEN_PRESENT_POSITION);
 
   // Open Serial Port
   dxl_comm_result = portHandler->openPort();
