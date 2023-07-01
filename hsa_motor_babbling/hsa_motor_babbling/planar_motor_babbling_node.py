@@ -3,7 +3,7 @@ import rclpy
 from rclpy.node import Node
 
 from dynamixel_control_custom_interfaces.msg import SetPosition
-from dynamixel_control_custom_interfaces.srv import GetPosition
+from dynamixel_control_custom_interfaces.srv import GetPositions
 
 
 class PlanarMotorBabblingNode(Node):
@@ -89,16 +89,13 @@ class PlanarMotorBabblingNode(Node):
         return
 
     def get_motor_positions(self) -> np.ndarray:
-        motor_positions = np.zeros(len(self.motor_ids), dtype=np.uint32)
-        for motor_idx, motor_id in enumerate(list(self.motor_ids)):
-            req = GetPosition.Request()
-            req.id = int(motor_id)
+        req = GetPositions.Request()
+        req.ids = self.motor_ids
 
-            future = self.motor_pos_cli.call_async(req)
-            rclpy.spin_until_future_complete(self, future)
-            resp = future.result()
-
-            motor_positions[motor_idx] = resp.position
+        future = self.motor_pos_cli.call_async(req)
+        rclpy.spin_until_future_complete(self, future)
+        resp = future.result()
+        motor_positions = resp.positions
 
         return motor_positions
 
