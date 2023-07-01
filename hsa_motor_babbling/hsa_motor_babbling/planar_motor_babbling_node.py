@@ -10,12 +10,12 @@ class PlanarMotorBabblingNode(Node):
     def __init__(self):
         super().__init__("planar_kinematic_control_node")
 
-        self.motor_pos_cli = self.create_client(GetPosition, "/get_position")
+        self.motor_pos_cli = self.create_client(GetPositions, "/get_positions")
         self.motor_pos_cli.wait_for_service()
 
-        self.motor_ids = np.array([21, 22, 23, 24])
+        self.motor_ids = np.array([21, 22, 23, 24], dtype=np.uint8)
         self.motor_neutral_positions = self.get_motor_positions()
-        self.current_motor_goal_positions = self.motor_neutral_positions.copy()
+        self.current_motor_goal_positions = np.copy(self.motor_neutral_positions)
         self.rod_handedness = np.array([-1.0, 1.0, -1.0, 1.0])
 
         self.motor_goal_pos_publishers = {}
