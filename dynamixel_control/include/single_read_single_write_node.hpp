@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef READ_WRITE_NODE_HPP_
-#define READ_WRITE_NODE_HPP_
+#ifndef SINGLE_READ_SINGLE_WRITE_NODE_HPP_
+#define SINGLE_READ_SINGLE_WRITE_NODE_HPP_
 
 #include <cstdio>
 #include <memory>
@@ -22,18 +22,18 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rcutils/cmdline_parser.h"
 #include "dynamixel_sdk/dynamixel_sdk.h"
-#include "dynamixel_sdk_custom_interfaces/msg/set_position.hpp"
-#include "dynamixel_sdk_custom_interfaces/srv/get_position.hpp"
+#include "dynamixel_control_custom_interfaces/msg/set_position.hpp"
+#include "dynamixel_control_custom_interfaces/srv/get_position.hpp"
 
 
-class ReadWriteNode : public rclcpp::Node
+class SingleReadSingleWriteNode : public rclcpp::Node
 {
 public:
-  using SetPosition = dynamixel_sdk_custom_interfaces::msg::SetPosition;
-  using GetPosition = dynamixel_sdk_custom_interfaces::srv::GetPosition;
+  using SetPosition = dynamixel_control_custom_interfaces::msg::SetPosition;
+  using GetPosition = dynamixel_control_custom_interfaces::srv::GetPosition;
 
-  ReadWriteNode();
-  virtual ~ReadWriteNode();
+  SingleReadSingleWriteNode();
+  virtual ~SingleReadSingleWriteNode();
 
 private:
   std::vector<rclcpp::Subscription<SetPosition>::SharedPtr> set_position_subscribers_;
@@ -42,4 +42,4 @@ private:
   int present_position;
 };
 
-#endif  // READ_WRITE_NODE_HPP_
+#endif  // SINGLE_READ_SINGLE_WRITE_NODE_HPP_

@@ -18,11 +18,11 @@
 // To test this example, please follow the commands below.
 //
 // Open terminal #1
-// $ ros2 run dynamixel_control read_write_node
+// $ ros2 run dynamixel_control single_read_single_write_node
 //
 // Open terminal #2 (run one of below commands at a time)
-// $ ros2 topic pub -1 /set_position dynamixel_sdk_custom_interfaces/SetPosition "{id: 1, position: 1000}"
-// $ ros2 service call /get_position dynamixel_sdk_custom_interfaces/srv/GetPosition "id: 1"
+// $ ros2 topic pub -1 /set_position_motor_21 dynamixel_control_custom_interfaces/SetPosition "{id: 21, position: 1000}"
+// $ ros2 service call /get_position dynamixel_control_custom_interfaces/srv/GetPosition "id: 21"
 //
 // Author: Will Son, Maximilian Stölzle
 *******************************************************************************/
@@ -32,12 +32,12 @@
 #include <string>
 
 #include "dynamixel_sdk/dynamixel_sdk.h"
-#include "dynamixel_sdk_custom_interfaces/msg/set_position.hpp"
-#include "dynamixel_sdk_custom_interfaces/srv/get_position.hpp"
+#include "dynamixel_control_custom_interfaces/msg/set_position.hpp"
+#include "dynamixel_control_custom_interfaces/srv/get_position.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rcutils/cmdline_parser.h"
 
-#include "read_write_node.hpp"
+#include "single_read_single_write_node.hpp"
 
 // Control table address for X series (except XL-320)
 #define ADDR_OPERATING_MODE 11
@@ -59,14 +59,18 @@ uint8_t dxl_error = 0;
 uint32_t goal_position = 0;
 int dxl_comm_result = COMM_TX_FAIL;
 
-ReadWriteNode::ReadWriteNode()
-: Node("read_write_node")
+SingleReadSingleWriteNode::SingleReadSingleWriteNode()
+: Node("single_read_single_write_node")
 {
-  RCLCPP_INFO(this->get_logger(), "Run read write node");
+  RCLCPP_INFO(this->get_logger(), "Run single read single write node");
 
   this->declare_parameter("qos_depth", 10);
   int8_t qos_depth = 0;
   this->get_parameter("qos_depth", qos_depth);
+
+  this->declare_parameter("verbose", true);
+  bool verbose;
+  this->get_parameter("verbose", verbose);
 
   std::vector<uint8_t> motor_ids{ 21, 22, 23, 24 };
   this->declare_parameter("motor_ids", motor_ids);
@@ -81,7 +85,7 @@ ReadWriteNode::ReadWriteNode()
       this->create_subscription<SetPosition>(
       "set_position_motor_" + std::to_string(motor_id),
       QOS_RKL10V,
-      [this, motor_id](const SetPosition::SharedPtr msg) -> void
+      [this, verbose, motor_id](const SetPosition::SharedPtr msg) -> void
       {
         uint8_t dxl_error = 0;
 
@@ -101,11 +105,13 @@ ReadWriteNode::ReadWriteNode()
         );
 
         if (dxl_comm_result != COMM_SUCCESS) {
-          RCLCPP_INFO(this->get_logger(), "%s", packetHandler->getTxRxResult(dxl_comm_result));
+          RCLCPP_ERROR(this->get_logger(), "%s", packetHandler->getTxRxResult(dxl_comm_result));
         } else if (dxl_error != 0) {
-          RCLCPP_INFO(this->get_logger(), "%s", packetHandler->getRxPacketError(dxl_error));
+          RCLCPP_ERROR(this->get_logger(), "%s", packetHandler->getRxPacketError(dxl_error));
         } else {
-          RCLCPP_INFO(this->get_logger(), "Set [ID: %d] [Goal Position: %d]", msg->id, msg->position);
+          if (verbose) {
+            RCLCPP_INFO(this->get_logger(), "Set [ID: %d] [Goal Position: %d]", msg->id, msg->position);
+          }
         }
       }
       );
@@ -114,7 +120,7 @@ ReadWriteNode::ReadWriteNode()
 
 
   auto get_present_position =
-    [this](
+    [this, verbose](
     const std::shared_ptr<GetPosition::Request> request,
     std::shared_ptr<GetPosition::Response> response) -> void
     {
@@ -128,12 +134,14 @@ ReadWriteNode::ReadWriteNode()
         &dxl_error
       );
 
-      RCLCPP_INFO(
-        this->get_logger(),
-        "Get [ID: %d] [Present Position: %d]",
-        request->id,
-        present_position
-      );
+      if (verbose) {
+        RCLCPP_INFO(
+          this->get_logger(),
+          "Get [ID: %d] [Present Position: %d]",
+          request->id,
+          present_position
+        );
+      }
 
       response->position = present_position;
     };
@@ -141,7 +149,7 @@ ReadWriteNode::ReadWriteNode()
   get_position_server_ = create_service<GetPosition>("get_position", get_present_position);
 }
 
-ReadWriteNode::~ReadWriteNode()
+SingleReadSingleWriteNode::~SingleReadSingleWriteNode()
 {
 }
 
@@ -157,9 +165,9 @@ void setupDynamixel(uint8_t dxl_id)
   );
 
   if (dxl_comm_result != COMM_SUCCESS) {
-    RCLCPP_ERROR(rclcpp::get_logger("read_write_node"), "Failed to set Extended Position Control Mode.");
+    RCLCPP_ERROR(rclcpp::get_logger("single_read_single_write_node"), "Failed to set Extended Position Control Mode.");
   } else {
-    RCLCPP_INFO(rclcpp::get_logger("read_write_node"), "Succeeded to set Extended Position Control Mode.");
+    RCLCPP_INFO(rclcpp::get_logger("single_read_single_write_node"), "Succeeded to set Extended Position Control Mode.");
   }
 
   // Enable Torque of DYNAMIXEL
@@ -172,9 +180,9 @@ void setupDynamixel(uint8_t dxl_id)
   );
 
   if (dxl_comm_result != COMM_SUCCESS) {
-    RCLCPP_ERROR(rclcpp::get_logger("read_write_node"), "Failed to enable torque.");
+    RCLCPP_ERROR(rclcpp::get_logger("single_read_single_write_node"), "Failed to enable torque.");
   } else {
-    RCLCPP_INFO(rclcpp::get_logger("read_write_node"), "Succeeded to enable torque.");
+    RCLCPP_INFO(rclcpp::get_logger("single_read_single_write_node"), "Succeeded to enable torque.");
   }
 }
 
@@ -186,27 +194,27 @@ int main(int argc, char * argv[])
   // Open Serial Port
   dxl_comm_result = portHandler->openPort();
   if (dxl_comm_result == false) {
-    RCLCPP_ERROR(rclcpp::get_logger("read_write_node"), "Failed to open the port!");
+    RCLCPP_ERROR(rclcpp::get_logger("single_read_single_write_node"), "Failed to open the port!");
     return -1;
   } else {
-    RCLCPP_INFO(rclcpp::get_logger("read_write_node"), "Succeeded to open the port.");
+    RCLCPP_INFO(rclcpp::get_logger("single_read_single_write_node"), "Succeeded to open the port.");
   }
 
   // Set the baudrate of the serial port (use DYNAMIXEL Baudrate)
   dxl_comm_result = portHandler->setBaudRate(BAUDRATE);
   if (dxl_comm_result == false) {
-    RCLCPP_ERROR(rclcpp::get_logger("read_write_node"), "Failed to set the baudrate!");
+    RCLCPP_ERROR(rclcpp::get_logger("single_read_single_write_node"), "Failed to set the baudrate!");
     return -1;
   } else {
-    RCLCPP_INFO(rclcpp::get_logger("read_write_node"), "Succeeded to set the baudrate.");
+    RCLCPP_INFO(rclcpp::get_logger("single_read_single_write_node"), "Succeeded to set the baudrate.");
   }
 
   setupDynamixel(BROADCAST_ID);
 
   rclcpp::init(argc, argv);
 
-  auto readwritenode = std::make_shared<ReadWriteNode>();
-  rclcpp::spin(readwritenode);
+  auto node = std::make_shared<SingleReadSingleWriteNode>();
+  rclcpp::spin(node);
   rclcpp::shutdown();
 
   // Disable Torque of DYNAMIXEL

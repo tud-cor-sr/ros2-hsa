@@ -2,8 +2,8 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 
-from dynamixel_sdk_custom_interfaces.msg import SetPosition
-from dynamixel_sdk_custom_interfaces.srv import GetPosition
+from dynamixel_control_custom_interfaces.msg import SetPosition
+from dynamixel_control_custom_interfaces.srv import GetPosition
 
 
 class PlanarMotorBabblingNode(Node):
