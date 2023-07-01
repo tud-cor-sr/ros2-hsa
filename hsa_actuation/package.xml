@@ -1,12 +1,13 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>hsa_motor_babbling</name>
+  <name>hsa_actuation</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
   <maintainer email="maximilian@stoelzle.ch">root</maintainer>
   <license>TODO: License declaration</license>
 
+  <depend>common_interfaces</depend>
   <depend>dynamixel_control</depend>
   <depend>dynamixel_control_custom_interfaces</depend>
 

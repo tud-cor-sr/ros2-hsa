@@ -5,24 +5,13 @@ from rclpy.node import Node
 from dynamixel_control_custom_interfaces.msg import SetPosition
 from dynamixel_control_custom_interfaces.srv import GetPositions
 
+from hsa_actuation.hsa_actuation_base_node import HsaActuationBaseNode
 
-class PlanarMotorBabblingNode(Node):
+
+class PlanarMotorBabblingNode(HsaActuationBaseNode):
     def __init__(self):
         super().__init__("planar_kinematic_control_node")
-
-        self.motor_pos_cli = self.create_client(GetPositions, "/get_positions")
-        self.motor_pos_cli.wait_for_service()
-
-        self.motor_ids = np.array([21, 22, 23, 24], dtype=np.uint8)
-        self.motor_neutral_positions = self.get_motor_positions()
-        self.current_motor_goal_positions = np.copy(self.motor_neutral_positions)
         self.rod_handedness = np.array([-1.0, 1.0, -1.0, 1.0])
-
-        self.motor_goal_pos_publishers = {}
-        for motor_idx, motor_id in enumerate(list(self.motor_ids)):
-            self.motor_goal_pos_publishers[motor_id] = self.create_publisher(
-                SetPosition, f"/set_position_motor_{motor_id}", 10
-            )
 
         self.node_frequency = 100  # Hz
         self.timer = self.create_timer(1.0 / self.node_frequency, self.timer_callback)
@@ -62,6 +51,8 @@ class PlanarMotorBabblingNode(Node):
             raise ValueError("Unknown mode.")
 
     def timer_callback(self, event=None):
+        self.get_motor_angles()
+
         if self.time_idx >= self.u_ts.shape[0]:
             self.get_logger().info("Finished trajectory.")
             self.destroy_timer(self.timer)
@@ -77,41 +68,6 @@ class PlanarMotorBabblingNode(Node):
         self.set_motor_goal_angles(phi)
 
         self.time_idx += 1
-
-    def get_motor_angles(self) -> np.ndarray:
-        motor_positions = self.get_motor_positions()
-        motor_angles = (motor_positions - self.motor_neutral_positions) / 2048 * np.pi
-        return motor_angles
-    
-    def set_motor_goal_angles(self, goal_angles: np.ndarray):
-        motor_goal_positions = self.motor_neutral_positions + goal_angles / np.pi * 2048
-        self.set_motor_goal_positions(motor_goal_positions)
-        return
-
-    def get_motor_positions(self) -> np.ndarray:
-        req = GetPositions.Request()
-        req.ids = self.motor_ids
-
-        future = self.motor_pos_cli.call_async(req)
-        rclpy.spin_until_future_complete(self, future)
-        resp = future.result()
-        motor_positions = resp.positions
-
-        return motor_positions
-
-    def set_motor_goal_positions(self, goal_positions: np.ndarray):
-        for motor_idx, motor_id in enumerate(list(self.motor_ids)):
-            motor_goal_position = goal_positions[motor_idx]
-            if motor_goal_position != self.current_motor_goal_positions[motor_idx]:
-                msg = SetPosition()
-                msg.id = int(motor_id)
-                msg.position = int(goal_positions[motor_idx].item())
-
-                self.motor_goal_pos_publishers[motor_id].publish(msg)
-                self.current_motor_goal_positions[motor_idx] = motor_goal_position
-
-        return
-
 
 def main(args=None):
     rclpy.init(args=args)
