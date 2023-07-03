@@ -5,6 +5,7 @@ from rclpy.node import Node
 from dynamixel_control_custom_interfaces.msg import SetPosition
 from dynamixel_control_custom_interfaces.srv import GetPosition
 
+
 class PlanarKinematicControlNode(Node):
     def __init__(self):
         super().__init__("planar_kinematic_control_node")
@@ -15,7 +16,9 @@ class PlanarKinematicControlNode(Node):
         self.motor_ids = np.array([21, 22, 23, 24])
         self.motor_neutral_position = self.get_motor_positions()
 
-        self.motor_target_pos_pub = self.create_publisher(SetPosition, "/set_position", 10)
+        self.motor_target_pos_pub = self.create_publisher(
+            SetPosition, "/set_position", 10
+        )
 
         self.dummy_time_idx = 0
 
@@ -25,8 +28,8 @@ class PlanarKinematicControlNode(Node):
         self.kd = np.array([0, 0, 0])
         self.integral = np.zeros(3)
 
-        self.node_frequency = 100 # Hz
-        self.timer = self.create_timer(1.0/self.node_frequency, self.timer_callback)
+        self.node_frequency = 100  # Hz
+        self.timer = self.create_timer(1.0 / self.node_frequency, self.timer_callback)
 
     def timer_callback(self, event=None):
         # print("timer_callback", type(event), event)
@@ -44,15 +47,15 @@ class PlanarKinematicControlNode(Node):
         for motor_idx, motor_id in enumerate(list(self.motor_ids)):
             req = GetPosition.Request()
             req.id = int(motor_id)
-            
+
             future = self.motor_pos_cli.call_async(req)
             rclpy.spin_until_future_complete(self, future)
             resp = future.result()
 
             motor_positions[motor_idx] = resp.position
-            
+
         return motor_positions
-    
+
     def set_motor_goal_positions(self, goal_positions: np.ndarray):
         for motor_idx, motor_id in enumerate(list(self.motor_ids)):
             msg = SetPosition()
@@ -60,9 +63,9 @@ class PlanarKinematicControlNode(Node):
             msg.position = int(goal_positions[motor_idx].item())
 
             self.motor_target_pos_pub.publish(msg)
-            
+
         return
-    
+
     def evaluate_pid(self, q: np.ndarray, q_d: np.ndarray = None) -> np.ndarray:
         if q_d is None:
             q_d = np.zeros_like(q)
@@ -77,7 +80,7 @@ class PlanarKinematicControlNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    print('Hi from hsa_kinematic_control.')
+    print("Hi from hsa_kinematic_control.")
 
     node = PlanarKinematicControlNode()
 
@@ -90,5 +93,5 @@ def main(args=None):
     rclpy.shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

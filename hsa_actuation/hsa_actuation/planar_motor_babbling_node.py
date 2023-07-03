@@ -56,16 +56,19 @@ class PlanarMotorBabblingNode(HsaActuationBaseNode):
             self.destroy_timer(self.timer)
             return
 
-        phi = np.stack([
-            self.u_ts[self.time_idx, 0] * self.rod_handedness[0],
-            self.u_ts[self.time_idx, 1] * self.rod_handedness[1],
-            self.u_ts[self.time_idx, 1] * self.rod_handedness[2],
-            self.u_ts[self.time_idx, 0] * self.rod_handedness[3],
-        ])
+        phi = np.stack(
+            [
+                self.u_ts[self.time_idx, 0] * self.rod_handedness[0],
+                self.u_ts[self.time_idx, 1] * self.rod_handedness[1],
+                self.u_ts[self.time_idx, 1] * self.rod_handedness[2],
+                self.u_ts[self.time_idx, 0] * self.rod_handedness[3],
+            ]
+        )
 
         self.set_motor_goal_angles(phi)
 
         self.time_idx += 1
+
 
 def main(args=None):
     rclpy.init(args=args)
@@ -73,7 +76,7 @@ def main(args=None):
 
     node = PlanarMotorBabblingNode()
 
-    rclpy.spin(node)    
+    rclpy.spin(node)
 
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically

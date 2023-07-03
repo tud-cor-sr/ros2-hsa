@@ -27,7 +27,6 @@ def main(args=None):
     node = PresentMotorStatePubNode()
 
     rclpy.spin(node)
-    
 
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically

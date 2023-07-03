@@ -6,17 +6,17 @@ from rclpy.node import Node
 
 class PlanarCsIkNode(Node):
     def __init__(self):
-        super().__init__('planar_cs_ik_node')
-        self.get_logger().info('Hi from planar_cs_ik_node.')
+        super().__init__("planar_cs_ik_node")
+        self.get_logger().info("Hi from planar_cs_ik_node.")
 
-        self.declare_parameter('tf_base_topic', 'tf_base')
-        self.declare_parameter('tf_platform_topic', 'tf_platform')
+        self.declare_parameter("tf_base_topic", "tf_base")
+        self.declare_parameter("tf_platform_topic", "tf_platform")
 
         self.subscription = self.create_subscription(
             TransformStamped,
-            self.get_parameter('tf_base_topic').value,
+            self.get_parameter("tf_base_topic").value,
             self.listener_callback,
-            10
+            10,
         )
 
         # transformation from base tf to the start of the proximal end of the metamaterial
@@ -27,11 +27,10 @@ class PlanarCsIkNode(Node):
     def listener_callback(self, msg):
         self.get_logger().info('I heard: "%s"' % msg)
 
-        
 
 def main():
-    print('Hi from hsa_ik.')
+    print("Hi from hsa_ik.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

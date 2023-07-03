@@ -1,26 +1,23 @@
 from setuptools import setup
 
-package_name = 'hsa_inverse_kinematics'
+package_name = "hsa_inverse_kinematics"
 
 setup(
     name=package_name,
-    version='0.0.0',
+    version="0.0.0",
     packages=[package_name],
     data_files=[
-        ('share/ament_index/resource_index/packages',
-            ['resource/' + package_name]),
-        ('share/' + package_name, ['package.xml']),
+        ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
+        ("share/" + package_name, ["package.xml"]),
     ],
-    install_requires=['numpy', 'setuptools'],
+    install_requires=["numpy", "setuptools"],
     zip_safe=True,
-    maintainer='root',
-    maintainer_email='maximilian@stoelzle.ch',
-    description='TODO: Package description',
-    license='TODO: License declaration',
-    tests_require=['pytest'],
+    maintainer="root",
+    maintainer_email="maximilian@stoelzle.ch",
+    description="TODO: Package description",
+    license="TODO: License declaration",
+    tests_require=["pytest"],
     entry_points={
-        'console_scripts': [
-            'planar_cs_ik_node = hsa_ik.planar_cs_ik_node:main'
-        ],
+        "console_scripts": ["planar_cs_ik_node = hsa_ik.planar_cs_ik_node:main"],
     },
 )
