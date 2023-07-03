@@ -18,8 +18,8 @@ class HsaActuationBaseNode(Node):
         self.motor_pos_cli = self.create_client(GetPositions, self.get_parameter("get_motor_positions_service_name").value)
         self.motor_pos_cli.wait_for_service()
 
-        self.motor_ids = np.array([21, 22, 23, 24], dtype=np.uint8)
-        self.motor_neutral_positions = self.get_motor_positions()
+        self.motor_ids = np.array([21, 22, 23, 24], dtype=np.int)
+        self.motor_neutral_positions = self.get_present_motor_positions()
 
         self.present_motor_positions = np.copy(self.motor_neutral_positions)
         self.current_motor_goal_positions = np.copy(self.motor_neutral_positions)
@@ -40,8 +40,8 @@ class HsaActuationBaseNode(Node):
         )
         
 
-    def get_motor_angles(self) -> np.ndarray:
-        motor_positions = self.get_motor_positions()
+    def get_present_motor_angles(self) -> np.ndarray:
+        motor_positions = self.get_present_motor_positions()
 
         self.present_motor_angles = (motor_positions - self.motor_neutral_positions).astype(np.float64) / 2048 * np.pi
 
@@ -49,14 +49,20 @@ class HsaActuationBaseNode(Node):
 
         return self.present_motor_angles
     
+    def get_present_motor_angles_async(self):
+        return self.get_present_motor_positions_async()
+    
     def set_motor_goal_angles(self, goal_angles: np.ndarray):
-        motor_goal_positions = self.motor_neutral_positions + goal_angles / np.pi * 2048
-
         self.goal_motor_angles_pub.publish(Float64MultiArray(data=goal_angles))
 
-        return self.set_motor_goal_positions(motor_goal_positions)
+        goal_motor_positions = self.motor_neutral_positions + (goal_angles / np.pi * 2048).astype(np.int)
 
-    def get_motor_positions(self) -> np.ndarray:
+        return self.set_goal_motor_positions(goal_motor_positions)
+
+    def get_present_motor_positions(self) -> np.ndarray:
+        """
+        Returns the current motor positions as a numpy array. This is a blocking call.
+        """
         req = GetPositions.Request()
         req.ids = self.motor_ids
 
@@ -68,12 +74,37 @@ class HsaActuationBaseNode(Node):
             self.get_logger().error(f"Service call for {self.get_parameter('get_motor_positions_service_name').value}. timed out.")
             return self.present_motor_angles
         
-        motor_positions = np.array(resp.positions, dtype=np.uint8)
+        motor_positions = np.array(resp.positions, dtype=np.int)
         self.present_motor_positions = motor_positions
 
         return motor_positions
+    
+    def get_present_motor_positions_async(self):
+        """
+        Returns the current motor goal positions as a numpy array. This is a non-blocking call.
+        """
+        req = GetPositions.Request()
+        req.ids = self.motor_ids
 
-    def set_motor_goal_positions(self, goal_positions: np.ndarray) -> bool:
+        future = self.motor_pos_cli.call_async(req)
+        future.add_done_callback(self._get_present_motor_state_callback)
+
+    def _get_present_motor_state_callback(self, future) -> np.ndarray:
+        resp = future.result()
+        
+        if resp is None:
+            self.get_logger().error(f"Service request for {self.get_parameter('get_motor_positions_service_name').value}. failed.")
+            return self.present_motor_angles
+        
+        motor_positions = np.array(resp.positions, dtype=np.int)
+        self.present_motor_positions = motor_positions
+
+        self.present_motor_angles = (motor_positions - self.motor_neutral_positions).astype(np.float64) / 2048 * np.pi
+        self.present_motor_angles_pub.publish(Float64MultiArray(data=self.present_motor_angles))
+
+        return motor_positions
+
+    def set_goal_motor_positions(self, goal_positions: np.ndarray) -> bool:
         for motor_idx, motor_id in enumerate(list(self.motor_ids)):
             motor_goal_position = goal_positions[motor_idx]
             if motor_goal_position != self.current_motor_goal_positions[motor_idx]:

@@ -13,7 +13,7 @@ class PlanarMotorBabblingNode(HsaActuationBaseNode):
         super().__init__("planar_kinematic_control_node")
         self.rod_handedness = np.array([-1.0, 1.0, -1.0, 1.0])
 
-        self.node_frequency = 100  # Hz
+        self.node_frequency = 25  # Hz
         self.timer = self.create_timer(1.0 / self.node_frequency, self.timer_callback)
         self.time_idx = 0
 
@@ -51,8 +51,6 @@ class PlanarMotorBabblingNode(HsaActuationBaseNode):
             raise ValueError("Unknown mode.")
 
     def timer_callback(self, event=None):
-        self.get_motor_angles()
-
         if self.time_idx >= self.u_ts.shape[0]:
             self.get_logger().info("Finished trajectory.")
             self.destroy_timer(self.timer)
@@ -75,7 +73,7 @@ def main(args=None):
 
     node = PlanarMotorBabblingNode()
 
-    rclpy.spin(node)
+    rclpy.spin(node)    
 
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically

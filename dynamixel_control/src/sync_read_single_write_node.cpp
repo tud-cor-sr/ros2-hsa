@@ -151,8 +151,8 @@ SyncReadSingleWriteNode::SyncReadSingleWriteNode()
         RCLCPP_ERROR(this->get_logger(), "%s", packetHandler->getTxRxResult(dxl_comm_result));
       }
 
-      // Check if groupsyncread data of Dynamixel#1 is available
       for (auto motor_id : request->ids) {
+        // Check if groupsyncread data of motor is available
         dxl_getdata_result = groupSyncRead->isAvailable(motor_id, ADDR_PRESENT_POSITION, LEN_PRESENT_POSITION);
         if (dxl_getdata_result != true)
         {
