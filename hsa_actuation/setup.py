@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'hsa_motor_babbling'
+package_name = 'hsa_actuation'
 
 setup(
     name=package_name,
@@ -16,11 +16,12 @@ setup(
     maintainer='root',
     maintainer_email='maximilian@stoelzle.ch',
     description='TODO: Package description',
-    license='TODO: License declaration',
+    license='MIT',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'planar_motor_babbling_node = hsa_motor_babbling.planar_motor_babbling_node:main'
+            'planar_motor_babbling_node = hsa_actuation.planar_motor_babbling_node:main',
+            'present_motor_state_pub_node = hsa_actuation.present_motor_state_pub_node:main',
         ],
     },
 )
