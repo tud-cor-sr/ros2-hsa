@@ -1,11 +1,22 @@
-from geometry_msgs.msg import TransformStamped
-import numpy as np
+from functools import partial
+from jax import config as jax_config
+
+jax_config.update("jax_enable_x64", True)  # double precision
+jax_config.update("jax_platform_name", "cpu")  # use CPU
+from jax import Array, jit
+from jax import numpy as jnp
 import rclpy
 from rclpy.node import Node
+from pathlib import Path
 from scipy.spatial.transform import Rotation as R
 
 from geometry_msgs.msg import Pose2D
 from mocap_optitrack_interfaces.msg import RigidBodyArray
+from std_msgs.msg import Float64MultiArray
+
+import jsrm
+from jsrm.parameters.hsa_params import PARAMS_CONTROL
+from jsrm.systems import planar_hsa
 
 
 class PlanarCsIkNode(Node):
@@ -29,7 +40,29 @@ class PlanarCsIkNode(Node):
             Pose2D, self.get_parameter("end_effector_pose_topic").value, 10
         )
 
+        self.declare_parameter("configuration_topic", "configuration")
+        self.configuration_pub = self.create_publisher(
+            Float64MultiArray, self.get_parameter("configuration_topic").value, 10
+        )
 
+        # filepath to symbolic expressions
+        sym_exp_filepath = (
+            Path(jsrm.__file__).parent
+            / "symbolic_expressions"
+            / f"planar_hsa_ns-1_nrs-2.dill"
+        )
+        (_, _, _, inverse_kinematics_end_effector_fn, _, _) = planar_hsa.factory(
+            sym_exp_filepath
+        )
+        self.params = PARAMS_CONTROL
+
+        # intialize and jit the inverse kinematics function
+        self.inverse_kinematics_end_effector_fn = jit(
+            partial(inverse_kinematics_end_effector_fn, self.params)
+        )
+        chiee_dummy = jnp.zeros((3,))
+        q_dummy = self.inverse_kinematics_end_effector_fn(chiee_dummy)
+        self.get_logger().info("Jitting of inverse kinematics function done")
 
         # self.declare_parameter("tf_base_topic", "tf_base")
         # self.declare_parameter("tf_platform_topic", "tf_platform")
@@ -49,34 +82,46 @@ class PlanarCsIkNode(Node):
             # self.get_logger().info('Rigid body: "%s"' % rigid_body_msg)
             if rigid_body_msg.id == self.mocap_platform_id:
                 self.process_platform_msg(rigid_body_msg)
-                
 
     def process_platform_msg(self, msg):
         position_msg = msg.pose_stamped.pose.position
         orientation_msg = msg.pose_stamped.pose.orientation
 
-        position = np.array([position_msg.x, position_msg.y, position_msg.z])
-        quat = np.array(
+        position = jnp.array([position_msg.x, position_msg.y, position_msg.z])
+        quat = jnp.array(
             [orientation_msg.x, orientation_msg.y, orientation_msg.z, orientation_msg.w]
         )
         rot = R.from_quat(quat)
-        rotmat = rot.as_matrix()
-        euler_xyz = rot.as_euler("xyz", degrees=False)
+        rotmat = jnp.array(rot.as_matrix())
+        euler_xyz = jnp.array(rot.as_euler("xyz", degrees=False))
 
         # subtract distance from the platform markers to the top surface of the platform
         # the MoCap markers of the platform are roughly 7 mm above the end-effector frame (e.g. top surface of the platform)
-        position = position - rotmat @ np.array([0, 0, 0.007])
+        position = position - rotmat @ jnp.array([0, 0, 0.007])
 
         # define the SE(2) pose of the end-effector frame\
         # y-axis of the world frame becomes the negative x-axis of the end-effector frame
         # z-axis of the world frame becomes the y-axis of the end-effector frame
         # the rotation around the x-axis of the world frame is the same as the rotation around the negative z-axis of the end-effector frame
-        chiee = np.array([
-            -position[1], position[2], -euler_xyz[0],
-        ])
+        chiee = jnp.array(
+            [
+                -position[1],
+                position[2],
+                -euler_xyz[0],
+            ]
+        )
 
         end_effector_pose_msg = Pose2D(x=chiee[0], y=chiee[1], theta=chiee[2])
         self.end_effector_pose_pub.publish(end_effector_pose_msg)
+
+        # apply inverse kinematics
+        q = self.inverse_kinematics_end_effector_fn(chiee)
+        self.get_logger().info("q =\n %s" % q)
+
+        # publish configuration
+        configuration_msg = Float64MultiArray(data=q)
+        self.configuration_pub.publish(configuration_msg)
+
 
 def main(args=None):
     rclpy.init(args=args)

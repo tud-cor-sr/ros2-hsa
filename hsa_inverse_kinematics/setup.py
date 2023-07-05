@@ -11,9 +11,9 @@ setup(
     data_files=[
         ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
         ("share/" + package_name, ["package.xml"]),
-        (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
+        (os.path.join("share", package_name, "config"), glob("config/*.yaml")),
     ],
-    install_requires=["numpy", "setuptools"],
+    install_requires=["dill", "jax", "jsrm", "numpy", "setuptools", "sympy>=1.11"],
     zip_safe=True,
     maintainer="root",
     maintainer_email="maximilian@stoelzle.ch",
@@ -21,6 +21,8 @@ setup(
     license="TODO: License declaration",
     tests_require=["pytest"],
     entry_points={
-        "console_scripts": ["planar_cs_ik_node = hsa_inverse_kinematics.planar_cs_ik_node:main"],
+        "console_scripts": [
+            "planar_cs_ik_node = hsa_inverse_kinematics.planar_cs_ik_node:main"
+        ],
     },
 )
