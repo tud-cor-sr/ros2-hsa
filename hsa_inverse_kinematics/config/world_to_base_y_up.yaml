@@ -1,0 +1,19 @@
+#Configuration file for the world_to_base node (w2b) when in the data streaming pane of motive the Up Axis option is set to "Y up"
+world_to_base:
+  ros__parameters:
+      #Orientation of the robot base w.r.t. motive frame as unit quaternion
+      #See https://www.overleaf.com/read/mggtpwfjhjzt for further details
+      base_qx: -0.7071068 
+      base_qy: 0.0
+      base_qz: 0.0
+      base_qw: 0.7071068
+      #Offset of the rigid body base w.r.t. the robot base
+      #See https://www.overleaf.com/read/mggtpwfjhjzt for further details
+      initial_offset_x: 0.0
+      initial_offset_y: 0.0
+      # the MoCap markers of the base are 3.5 mm above the base frame (e.g. top surface of the top motor mounting plate)
+      initial_offset_z: 0.0035 # unit of measures are in [m]
+      #Motive ID of the robot base
+      base_id: 3
+      sub_topic: "mocap_rigid_bodies"
+      pub_topic: "baseframe_rigid_bodies"
