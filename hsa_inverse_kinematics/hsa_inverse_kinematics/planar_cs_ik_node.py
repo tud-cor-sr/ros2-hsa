@@ -10,9 +10,9 @@ from rclpy.node import Node
 from pathlib import Path
 from scipy.spatial.transform import Rotation as R
 
+from example_interfaces.msg import Float64MultiArray
 from geometry_msgs.msg import Pose2D
 from mocap_optitrack_interfaces.msg import RigidBodyArray
-from std_msgs.msg import Float64MultiArray
 
 import jsrm
 from jsrm.parameters.hsa_params import PARAMS_CONTROL

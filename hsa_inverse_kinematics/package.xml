@@ -7,7 +7,7 @@
   <maintainer email="maximilian@stoelzle.ch">root</maintainer>
   <license>TODO: License declaration</license>
 
-  <depend>std_msgs</depend>
+  <depend>example_interfaces</depend>
   <depend>geometry_msgs</depend>
   <depend>mocap_optitrack_interfaces</depend>
 

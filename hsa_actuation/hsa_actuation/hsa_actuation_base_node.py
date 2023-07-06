@@ -2,7 +2,7 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 
-from std_msgs.msg import Float64MultiArray
+from example_interfaces.msg import Float64MultiArray
 from dynamixel_control_custom_interfaces.msg import SetPosition
 from dynamixel_control_custom_interfaces.srv import GetPositions
 

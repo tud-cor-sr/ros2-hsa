@@ -1,7 +1,7 @@
 import numpy as np
 import rclpy
 
-from std_msgs.msg import Float64MultiArray
+from example_interfaces.msg import Float64MultiArray
 from dynamixel_control_custom_interfaces.msg import SetPosition
 from dynamixel_control_custom_interfaces.srv import GetPositions
 from hsa_actuation.hsa_actuation_base_node import HsaActuationBaseNode
