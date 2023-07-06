@@ -3,13 +3,15 @@
 <package format="3">
   <name>dynamixel_control_custom_interfaces</name>
   <version>3.7.60</version>
-  <description>ROS2 custom interface examples using ROBOTIS DYNAMIXEL SDK</description>
-  <maintainer email="willson@robotis.com">Will Son</maintainer>
+  <description>ROS2 custom interfaces ROBOTIS DYNAMIXEL SDK</description>
+  <maintainer email="maximilian@stoelzle.ch">Maximilian Stolzle</maintainer>
   <license>Apache 2.0</license>
   <url type="website">http://wiki.ros.org/dynamixel_sdk</url>
   <url type="repository">https://github.com/ROBOTIS-GIT/DynamixelSDK</url>
   <url type="bugtracker">https://github.com/ROBOTIS-GIT/DynamixelSDK/issues</url>
   <author email="willson@robotis.com">Will Son</author>
+  <depend>std_msgs</depend>
+  <depend>example_interfaces</depend>
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>rosidl_default_generators</buildtool_depend>
   <build_depend>builtin_interfaces</build_depend>

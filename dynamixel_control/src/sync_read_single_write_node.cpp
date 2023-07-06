@@ -173,6 +173,7 @@ SyncReadSingleWriteNode::SyncReadSingleWriteNode()
         }
 
         // add the data to the response
+        response->header.stamp = rclcpp::Clock().now();
         response->positions.push_back(present_position_tmp_);
       }
 

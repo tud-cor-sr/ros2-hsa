@@ -143,6 +143,7 @@ SingleReadSingleWriteNode::SingleReadSingleWriteNode()
         );
       }
 
+      response->header.stamp = rclcpp::Clock().now();
       response->position = present_position;
     };
 
