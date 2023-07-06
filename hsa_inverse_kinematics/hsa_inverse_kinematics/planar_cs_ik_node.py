@@ -10,9 +10,8 @@ from rclpy.node import Node
 from pathlib import Path
 from scipy.spatial.transform import Rotation as R
 
-from example_interfaces.msg import Float64MultiArray
 from geometry_msgs.msg import Pose2D
-from mocap_optitrack_interfaces.msg import RigidBodyArray
+from mocap_optitrack_interfaces.msg import RigidBodyArray, PlanarCsConfiguration
 
 import jsrm
 from jsrm.parameters.hsa_params import PARAMS_CONTROL
@@ -42,7 +41,7 @@ class PlanarCsIkNode(Node):
 
         self.declare_parameter("configuration_topic", "configuration")
         self.configuration_pub = self.create_publisher(
-            Float64MultiArray, self.get_parameter("configuration_topic").value, 10
+            PlanarCsConfiguration, self.get_parameter("configuration_topic").value, 10
         )
 
         # filepath to symbolic expressions
@@ -119,7 +118,11 @@ class PlanarCsIkNode(Node):
         self.get_logger().info("q =\n %s" % q)
 
         # publish configuration
-        configuration_msg = Float64MultiArray(data=q)
+        configuration_msg = PlanarCsConfiguration()
+        configuration_msg.header.stamp = msg.header.stamp
+        configuration_msg.kappa_b = q[0]
+        configuration_msg.sigma_sh = q[1]
+        configuration_msg.sigma_a = q[2]
         self.configuration_pub.publish(configuration_msg)
 
 
