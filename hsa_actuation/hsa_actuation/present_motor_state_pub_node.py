@@ -11,14 +11,6 @@ class PresentMotorStatePubNode(HsaActuationBaseNode):
     def __init__(self):
         super().__init__("presenet_motor_state_pub_node")
 
-        self.declare_parameter("frequency", 25.0)
-        self.frequency = self.get_parameter("frequency").value
-
-        self.timer = self.create_timer(1.0 / self.frequency, self.timer_callback)
-
-    def timer_callback(self):
-        self.get_present_motor_positions_async()
-
 
 def main(args=None):
     rclpy.init(args=args)

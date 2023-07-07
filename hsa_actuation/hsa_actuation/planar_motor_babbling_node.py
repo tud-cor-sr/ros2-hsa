@@ -11,8 +11,6 @@ from hsa_actuation.hsa_actuation_base_node import HsaActuationBaseNode
 class PlanarMotorBabblingNode(HsaActuationBaseNode):
     def __init__(self):
         super().__init__("planar_kinematic_control_node")
-        self.rod_handedness = np.array([-1.0, 1.0, -1.0, 1.0])
-
         self.node_frequency = 25  # Hz
         self.timer = self.create_timer(1.0 / self.node_frequency, self.timer_callback)
         self.time_idx = 0

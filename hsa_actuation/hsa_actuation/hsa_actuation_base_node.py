@@ -24,6 +24,7 @@ class HsaActuationBaseNode(Node):
 
         self.motor_ids = np.array([21, 22, 23, 24], dtype=np.int)
         self.motor_neutral_positions = self.get_present_motor_positions()
+        self.rod_handedness = np.array([1.0, -1.0, 1.0, -1.0])
 
         self.present_motor_positions = np.copy(self.motor_neutral_positions)
         self.current_motor_goal_positions = np.copy(self.motor_neutral_positions)
@@ -48,6 +49,11 @@ class HsaActuationBaseNode(Node):
             self.get_parameter("goal_motor_angles_topic_name").value,
             10,
         )
+
+        self.declare_parameter("present_motor_angles_frequency", 25.0)
+        self.present_motor_angles_frequency = self.get_parameter("present_motor_angles_frequency").value
+
+        self.present_motor_angles_timer = self.create_timer(1.0 / self.present_motor_angles_frequency, self.get_present_motor_angles_async)
 
     def get_present_motor_angles(self) -> np.ndarray:
         motor_positions = self.get_present_motor_positions()
