@@ -117,7 +117,6 @@ class PlanarCsIkNode(Node):
 
         # apply inverse kinematics
         q = self.inverse_kinematics_end_effector_fn(chiee)
-        self.get_logger().info("q =\n %s" % q)
 
         # publish configuration
         configuration_msg = PlanarCsConfiguration()
