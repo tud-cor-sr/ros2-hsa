@@ -199,9 +199,9 @@ void setupDynamixel(uint8_t dxl_id)
   );
 
   if (dxl_comm_result != COMM_SUCCESS) {
-    RCLCPP_ERROR(rclcpp::get_logger("read_write_node"), "Failed to set Extended Position Control Mode.");
+    RCLCPP_ERROR(rclcpp::get_logger("sync_read_single_write"), "Failed to set Extended Position Control Mode.");
   } else {
-    RCLCPP_INFO(rclcpp::get_logger("read_write_node"), "Succeeded to set Extended Position Control Mode.");
+    RCLCPP_INFO(rclcpp::get_logger("sync_read_single_write"), "Succeeded to set Extended Position Control Mode.");
   }
 
   // Enable Torque of DYNAMIXEL
@@ -214,9 +214,9 @@ void setupDynamixel(uint8_t dxl_id)
   );
 
   if (dxl_comm_result != COMM_SUCCESS) {
-    RCLCPP_ERROR(rclcpp::get_logger("read_write_node"), "Failed to enable torque.");
+    RCLCPP_ERROR(rclcpp::get_logger("sync_read_single_write"), "Failed to enable torque.");
   } else {
-    RCLCPP_INFO(rclcpp::get_logger("read_write_node"), "Succeeded to enable torque.");
+    RCLCPP_INFO(rclcpp::get_logger("sync_read_single_write"), "Succeeded to enable torque.");
   }
 }
 
