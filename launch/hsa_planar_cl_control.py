@@ -53,7 +53,7 @@ def generate_launch_description():
             package="hsa_planar_control",
             executable="planar_mb_control_node",
             name="planar_mb_control",
-        )
+        ),
     ]
 
     if RECORD_BAG:

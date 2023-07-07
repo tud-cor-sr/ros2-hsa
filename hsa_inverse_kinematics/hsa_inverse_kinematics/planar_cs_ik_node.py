@@ -110,7 +110,9 @@ class PlanarCsIkNode(Node):
             ]
         )
 
-        end_effector_pose_msg = Pose2D(x=chiee[0], y=chiee[1], theta=chiee[2])
+        end_effector_pose_msg = Pose2D(
+            x=chiee[0].item(), y=chiee[1].item(), theta=chiee[2].item()
+        )
         self.end_effector_pose_pub.publish(end_effector_pose_msg)
 
         # apply inverse kinematics
@@ -120,9 +122,9 @@ class PlanarCsIkNode(Node):
         # publish configuration
         configuration_msg = PlanarCsConfiguration()
         configuration_msg.header.stamp = msg.header.stamp
-        configuration_msg.kappa_b = q[0]
-        configuration_msg.sigma_sh = q[1]
-        configuration_msg.sigma_a = q[2]
+        configuration_msg.kappa_b = q[0].item()
+        configuration_msg.sigma_sh = q[1].item()
+        configuration_msg.sigma_a = q[2].item()
         self.configuration_pub.publish(configuration_msg)
 
 
