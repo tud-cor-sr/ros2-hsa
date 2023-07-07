@@ -43,11 +43,13 @@ def generate_launch_description():
             package="hsa_inverse_kinematics",
             executable="planar_cs_ik_node",
             name="inverse_kinematics",
+            arguments=["--ros-args", "--log-level", LOG_LEVEL],
         ),
         Node(
             package="dynamixel_control",
             executable="sync_read_single_write_node",
             name="dynamixel_control",
+            arguments=["--ros-args", "--log-level", LOG_LEVEL],
         ),
         Node(
             package="hsa_planar_control",
