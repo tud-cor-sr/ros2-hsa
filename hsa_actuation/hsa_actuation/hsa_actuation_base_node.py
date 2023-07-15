@@ -51,9 +51,14 @@ class HsaActuationBaseNode(Node):
         )
 
         self.declare_parameter("present_motor_angles_frequency", 25.0)
-        self.present_motor_angles_frequency = self.get_parameter("present_motor_angles_frequency").value
+        self.present_motor_angles_frequency = self.get_parameter(
+            "present_motor_angles_frequency"
+        ).value
 
-        self.present_motor_angles_timer = self.create_timer(1.0 / self.present_motor_angles_frequency, self.get_present_motor_angles_async)
+        self.present_motor_angles_timer = self.create_timer(
+            1.0 / self.present_motor_angles_frequency,
+            self.get_present_motor_angles_async,
+        )
 
     def get_present_motor_angles(self) -> np.ndarray:
         motor_positions = self.get_present_motor_positions()

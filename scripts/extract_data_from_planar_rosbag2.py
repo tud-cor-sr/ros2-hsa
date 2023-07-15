@@ -9,25 +9,25 @@ from pathlib import Path
 from tqdm import tqdm
 
 
-ROSBAG2_PATH = Path("/home/mstoelzle/phd/rosbags/rosbag2_20230714_135545/rosbag2_20230714_135545_0.mcap")
+ROSBAG2_PATH = Path(
+    "/home/mstoelzle/phd/rosbags/rosbag2_20230714_135545/rosbag2_20230714_135545_0.mcap"
+)
+
 
 def main():
-    reader = nml_bag.Reader(
-        str(ROSBAG2_PATH),
-        storage_id="mcap"
-    )
+    reader = nml_bag.Reader(str(ROSBAG2_PATH), storage_id="mcap")
 
     print("Available topics:\n", reader.topics)
-    
+
     ts_q_ls, q_ls = [], []
     ts_q_d_ls, q_d_ls = [], []
     ts_chiee_ls, chiee_ls = [], []
     ts_phi_ls, phi_ls = [], []
-    
+
     ts_q_des_ls, q_des_ls = [], []
     ts_chiee_des_ls, chiee_des_ls = [], []
     ts_phi_ss_ls, phi_ss_ls = [], []
-    
+
     ts_phi_des_ls, phi_des_ls = [], []
     ts_phi_sat_ls, phi_sat_ls = [], []
 
@@ -52,9 +52,25 @@ def main():
             phi_ls.append(np.array(msg["data"]))
         elif topic == "/setpoint_in_control_loop":
             ts_chiee_des_ls.append(time)
-            chiee_des_ls.append(np.array([msg["chiee_des"]["x"], msg["chiee_des"]["y"], msg["chiee_des"]["theta"]]))
+            chiee_des_ls.append(
+                np.array(
+                    [
+                        msg["chiee_des"]["x"],
+                        msg["chiee_des"]["y"],
+                        msg["chiee_des"]["theta"],
+                    ]
+                )
+            )
             ts_q_des_ls.append(time)
-            q_des_ls.append(np.array([msg["q_des"]["kappa_b"], msg["q_des"]["sigma_sh"], msg["q_des"]["sigma_a"]]))
+            q_des_ls.append(
+                np.array(
+                    [
+                        msg["q_des"]["kappa_b"],
+                        msg["q_des"]["sigma_sh"],
+                        msg["q_des"]["sigma_a"],
+                    ]
+                )
+            )
             ts_phi_ss_ls.append(time)
             phi_ss_ls.append(np.array(msg["phi_ss"]))
         elif topic == "/unsaturated_control_input":
@@ -90,7 +106,7 @@ def main():
 
     # save data
     np.savez(str(ROSBAG2_PATH.with_suffix(".npz")), **data_ts)
-        
+
 
 if __name__ == "__main__":
     main()
