@@ -40,6 +40,7 @@
 #include "single_read_single_write_node.hpp"
 
 // Control table address for X series (except XL-320)
+#define ADDR_RETURN_DELAY_TIME 9
 #define ADDR_OPERATING_MODE 11
 #define ADDR_TORQUE_ENABLE 64
 #define ADDR_GOAL_POSITION 116
