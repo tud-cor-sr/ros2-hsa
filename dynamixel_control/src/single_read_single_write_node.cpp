@@ -156,6 +156,21 @@ SingleReadSingleWriteNode::~SingleReadSingleWriteNode()
 
 void setupDynamixel(uint8_t dxl_id)
 {
+  // Set return delay time very low (2 microseconds)
+  dxl_comm_result = packetHandler->write1ByteTxRx(
+    portHandler,
+    dxl_id,
+    ADDR_RETURN_DELAY_TIME,
+    1,
+    &dxl_error
+  );
+
+  if (dxl_comm_result != COMM_SUCCESS) {
+    RCLCPP_ERROR(rclcpp::get_logger("single_read_single_write"), "Failed to set the return delay time.");
+  } else {
+    RCLCPP_INFO(rclcpp::get_logger("single_read_single_write"), "Succeeded to set the return delay time.");
+  }
+
   // Use Extended Position Control Mode
   dxl_comm_result = packetHandler->write1ByteTxRx(
     portHandler,

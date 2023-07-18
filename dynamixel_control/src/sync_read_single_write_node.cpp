@@ -41,6 +41,7 @@
 #include "sync_read_single_write_node.hpp"
 
 // Control table address for X series (except XL-320)
+#define ADDR_RETURN_DELAY_TIME 9
 #define ADDR_OPERATING_MODE 11
 #define ADDR_TORQUE_ENABLE 64
 #define ADDR_GOAL_POSITION 116
@@ -76,7 +77,7 @@ SyncReadSingleWriteNode::SyncReadSingleWriteNode()
   int8_t qos_depth = 0;
   this->get_parameter("qos_depth", qos_depth);
 
-  this->declare_parameter("verbose", true);
+  this->declare_parameter("verbose", false);
   bool verbose;
   this->get_parameter("verbose", verbose);
 
@@ -189,6 +190,21 @@ SyncReadSingleWriteNode::~SyncReadSingleWriteNode()
 
 void setupDynamixel(uint8_t dxl_id)
 {
+  // Set return delay time very low (2 microseconds)
+  dxl_comm_result = packetHandler->write1ByteTxRx(
+    portHandler,
+    dxl_id,
+    ADDR_RETURN_DELAY_TIME,
+    1,
+    &dxl_error
+  );
+
+  if (dxl_comm_result != COMM_SUCCESS) {
+    RCLCPP_ERROR(rclcpp::get_logger("sync_read_single_write"), "Failed to set the return delay time.");
+  } else {
+    RCLCPP_INFO(rclcpp::get_logger("sync_read_single_write"), "Succeeded to set the return delay time.");
+  }
+
   // Use Extended Position Control Mode
   dxl_comm_result = packetHandler->write1ByteTxRx(
     portHandler,
