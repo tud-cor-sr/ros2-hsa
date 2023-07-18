@@ -57,7 +57,7 @@ class HsaActuationBaseNode(Node):
 
         self.present_motor_angles_timer = self.create_timer(
             1.0 / self.present_motor_angles_frequency,
-            self.get_present_motor_angles_async,
+            self.get_present_motor_state_async,
         )
 
     def get_present_motor_angles(self) -> np.ndarray:
@@ -74,9 +74,6 @@ class HsaActuationBaseNode(Node):
         )
 
         return self.present_motor_angles
-
-    def get_present_motor_angles_async(self):
-        return self.get_present_motor_positions_async()
 
     def set_motor_goal_angles(self, goal_angles: np.ndarray):
         self.goal_motor_angles_pub.publish(Float64MultiArray(data=goal_angles))
@@ -109,9 +106,9 @@ class HsaActuationBaseNode(Node):
 
         return motor_positions
 
-    def get_present_motor_positions_async(self):
+    def get_present_motor_state_async(self):
         """
-        Returns the current motor goal positions as a numpy array. This is a non-blocking call.
+        Sends a request for the current motor positions and angles. This is a non-blocking call.
         """
         req = GetPositions.Request()
         req.ids = self.motor_ids
@@ -120,11 +117,15 @@ class HsaActuationBaseNode(Node):
         future.add_done_callback(self._get_present_motor_state_callback)
 
     def _get_present_motor_state_callback(self, future) -> np.ndarray:
+        """
+        Callback when the request for the current motor state was completed.
+        Saves present motor positions and angles as class attributes and publishes the angles.
+        """
         resp = future.result()
 
         if resp is None:
             self.get_logger().error(
-                f"Service request for {self.get_parameter('get_motor_positions_service_name').value}. failed."
+                f"Service request for {self.get_parameter('get_motor_positions_service_name').value} failed."
             )
             return self.present_motor_angles
 
