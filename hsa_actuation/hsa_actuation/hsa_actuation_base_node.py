@@ -22,7 +22,7 @@ class HsaActuationBaseNode(Node):
         )
         self.motor_pos_cli.wait_for_service()
 
-        self.motor_ids = np.array([21, 22, 23, 24], dtype=np.int)
+        self.motor_ids = np.array([21, 22, 23, 24], dtype=np.int32)
         self.motor_neutral_positions = self.get_present_motor_positions()
         self.rod_handedness = np.array([1.0, -1.0, 1.0, -1.0])
 
@@ -80,7 +80,7 @@ class HsaActuationBaseNode(Node):
 
         goal_motor_positions = self.motor_neutral_positions + (
             goal_angles / np.pi * 2048
-        ).astype(np.int)
+        ).astype(np.int32)
 
         return self.set_goal_motor_positions(goal_motor_positions)
 
@@ -101,7 +101,7 @@ class HsaActuationBaseNode(Node):
             )
             return self.present_motor_angles
 
-        motor_positions = np.array(resp.positions, dtype=np.int)
+        motor_positions = np.array(resp.positions, dtype=np.int32)
         self.present_motor_positions = motor_positions
 
         return motor_positions
@@ -129,7 +129,7 @@ class HsaActuationBaseNode(Node):
             )
             return self.present_motor_angles
 
-        motor_positions = np.array(resp.positions, dtype=np.int)
+        motor_positions = np.array(resp.positions, dtype=np.int32)
         self.present_motor_positions = motor_positions
 
         self.present_motor_angles = (
