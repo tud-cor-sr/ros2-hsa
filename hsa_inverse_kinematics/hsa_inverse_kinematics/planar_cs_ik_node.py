@@ -53,7 +53,14 @@ class PlanarCsIkNode(Node):
         (_, _, _, inverse_kinematics_end_effector_fn, _, _) = planar_hsa.factory(
             sym_exp_filepath
         )
+
         self.params = PARAMS_CONTROL
+
+        # parameter for specifying a different axial rest strain
+        self.declare_parameter("sigma_a_eq", self.params["sigma_a_eq"].mean().item())
+        sigma_a_eq = self.get_parameter("sigma_a_eq").value
+        self.params["sigma_a_eq"] = sigma_a_eq * jnp.ones_like(self.params["sigma_a_eq"])
+        self.get_logger().info(f"sigma_a_eq: {self.params['sigma_a_eq']}")
 
         # intialize and jit the inverse kinematics function
         self.inverse_kinematics_end_effector_fn = jit(
