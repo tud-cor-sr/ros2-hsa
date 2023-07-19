@@ -10,12 +10,12 @@ from tqdm import tqdm
 
 
 ROSBAG2_PATH = Path(
-    "/home/mstoelzle/phd/rosbags/rosbag2_20230714_135545/rosbag2_20230714_135545_0.mcap"
+    "/home/mstoelzle/phd/rosbags/rosbag2_20230719_094822/rosbag2_20230719_094822_0.db3"
 )
 
 
 def main():
-    reader = nml_bag.Reader(str(ROSBAG2_PATH), storage_id="mcap")
+    reader = nml_bag.Reader(str(ROSBAG2_PATH), storage_id="sqlite3")
 
     print("Available topics:\n", reader.topics)
 
@@ -71,8 +71,9 @@ def main():
                     ]
                 )
             )
-            ts_phi_ss_ls.append(time)
-            phi_ss_ls.append(np.array(msg["phi_ss"]))
+            if "phi_ss" in msg and len(msg["phi_ss"]) > 0:
+                ts_phi_ss_ls.append(time)
+                phi_ss_ls.append(np.array(msg["phi_ss"]))
         elif topic == "/unsaturated_control_input":
             phi_des = np.array(msg["data"])
             ts_phi_des_ls.append(time)
