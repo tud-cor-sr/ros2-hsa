@@ -78,7 +78,7 @@ SyncReadSingleWriteNode::SyncReadSingleWriteNode()
   this->get_parameter("qos_depth", qos_depth);
 
   this->declare_parameter("verbose", false);
-  bool verbose;
+  bool verbose = true;
   this->get_parameter("verbose", verbose);
 
   std::vector<uint8_t> motor_ids{ 21, 22, 23, 24 };
