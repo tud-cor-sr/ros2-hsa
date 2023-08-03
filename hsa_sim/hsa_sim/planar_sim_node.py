@@ -47,25 +47,56 @@ class PlanarSimNode(Node):
         self.declare_parameter("sigma_a_eq", self.params["sigma_a_eq"].mean().item())
         sigma_a_eq = self.get_parameter("sigma_a_eq").value
         self.params["sigma_a_eq"] = sigma_a_eq * jnp.ones_like(self.params["sigma_a_eq"])
+        # actual rest strain
+        self.xi_eq = sys_helpers["rest_strains_fn"](self.params)  # rest strains
 
-        # initialize state
+        # initialize state and control input
         self.q = jnp.zeros_like(self.xi_eq)  # generalized coordinates
         self.n_q = self.q.shape[0]  # number of generalized coordinates
         self.q_d = jnp.zeros_like(self.q)  # velocity of generalized coordinates
+        self.phi = jnp.zeros_like(self.params["roff"].flatten())
 
         # initialize ODE solver
-        self.declare_parameter("sim_dt", 1e-3)
+        self.declare_parameter("sim_dt", 1e-4)
         self.sim_dt = jnp.array(self.get_parameter("sim_dt").value)
-        self.ode_fn = jit(planar_hsa.ode_factory(dynamical_matrices_fn, self.params))
-        self.declare_parameter("ode_solver_class", "Euler")
-        self.ode_solver = getattr(diffrax, self.get_parameter("ode_solver_class").value)()
-        ode_term = ODETerm(partial(ode_fn, u=phi))
+        self.declare_parameter("control_frequency", 100)
+        self.control_frequency = self.get_parameter("control_frequency").value
+        self.control_dt = 1 / self.control_frequency
 
-        # jit the ode fn
-        x_dummy = jnp.zeros((2 * self.n_q,))
+        self.ode_fn = planar_hsa.ode_factory(dynamical_matrices_fn, self.params)
+        self.declare_parameter("ode_solver_class", "Dopri5")
+        self.ode_solver = getattr(diffrax, self.get_parameter("ode_solver_class").value)()
+
+        @jit
+        def simulation_fn(_t0: Array, _t1: Array, _x0: Array, _phi: Array = jnp.zeros_like(self.phi)) -> Array:
+            """
+            Simulate the system for a given control input.
+            Args:
+                _t0: initial time
+                _x0: initial state
+                _phi: control input
+            Returns:
+                _x1: final state
+            """
+            ode_term = ODETerm(partial(self.ode_fn, u=_phi))
+            sol = diffeqsolve(
+                ode_term,
+                solver=self.ode_solver,
+                t0=_t0,
+                t1=_t1,
+                dt0=self.sim_dt,
+                y0=_x0,
+                max_steps=None,
+                # saveat=SaveAt(ts=video_ts),
+            )
+            _x1 = sol.ys[-1, :]  # final state of the simulation
+            return _x1
+
+        self.simulation_fn = simulation_fn
+        # jit the simulation function
+        x0_dummy = jnp.zeros((2 * self.n_q,))
         phi_dummy = jnp.zeros_like(self.params["roff"].flatten())
-        print("phi dummy", phi_dummy)
-        x_d_dummy = ode_fn(0.0, x_dummy, u=phi_dummy)
+        x1_dummy = self.simulation_fn(jnp.array(0.0), jnp.array(self.control_dt), x0_dummy, phi_dummy)
 
         # initialize time
         self.clock_start_time = self.get_clock().now().nanoseconds * 1e-9  # time in seconds
@@ -83,6 +114,9 @@ class PlanarSimNode(Node):
             10,
         )
 
+        # initialize timer for the control loop
+        self.control_timer = self.create_timer(self.control_dt, self.call_controller)
+
         # create the subscription to the control input
         self.declare_parameter(
             "control_input_topic", "control_input"
@@ -94,12 +128,16 @@ class PlanarSimNode(Node):
             10,
         )
 
+        self.get_logger().info("Finished initializing planar_sim_node.")
+
     def phi_callback(self, msg: Float64MultiArray):
         # demanded rod twist angles
-        phi = jnp.array(msg.data)
+        self.phi = jnp.array(msg.data)    
 
+    def call_controller(self):
         # the current clock time
-        clock_current_time = self.get_clock().now().nanoseconds * 1e-9
+        clock_current_time_obj = self.get_clock().now()
+        clock_current_time = clock_current_time_obj.nanoseconds * 1e-9
         # compute the relative time to the start of the simulation
         t0 = self.clock_time - self.clock_start_time
         t1 = clock_current_time - self.clock_start_time
@@ -108,29 +146,18 @@ class PlanarSimNode(Node):
         x0 = jnp.concatenate((self.q, self.q_d))
 
         # simulate the system
-        ode_term = ODETerm(partial(ode_fn, u=phi))
-        sol = diffeqsolve(
-            ode_term,
-            solver=self.ode_solver,
-            t0=jnp.array(t0),
-            t1=jnp.array(t1),
-            dt0=self.sim_dt,
-            y0=x0,
-            max_steps=None,
-            # saveat=SaveAt(ts=video_ts),
-        )
+        x1 = self.simulation_fn(t0, t1, x0, self.phi)
 
         # update the state of the system
-        x1 = sol.y[-1, :]  # final state of the simulation
         self.q, self.q_d = x1[:self.n_q], x1[self.n_q:]
 
         # publish the configuration
         configuration_msg = PlanarCsConfiguration(
-            kappa_b=self.q.tolist(),
-            sigma_sh=self.q_d.tolist(),
-            sigma_a=self.params["sigma_a_eq"].tolist(),
+            kappa_b=self.q[0].item(),
+            sigma_sh=self.q[1].item(),
+            sigma_a=self.q[2].item(),
         )
-        configuration_msg.header.stamp = self.get_clock().now().to_msg()
+        configuration_msg.header.stamp = clock_current_time_obj.to_msg()
         self.configuration_pub.publish(configuration_msg)
 
         # publish configuration velocity
@@ -143,7 +170,7 @@ class PlanarSimNode(Node):
         self.clock_time = clock_current_time
 
 
-def main():
+def main(args=None):
     rclpy.init(args=args)
     print("Hi from planar_sim_node.")
 

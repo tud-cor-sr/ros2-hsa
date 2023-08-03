@@ -1,0 +1,3 @@
+[console_scripts]
+planar_sim_node = hsa_sim.planar_sim_node:main
+

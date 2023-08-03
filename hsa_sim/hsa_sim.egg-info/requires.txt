@@ -1,0 +1,9 @@
+diffrax
+dill
+jax
+numpy
+pandas
+setuptools
+sympy>=1.11
+tornado
+tqdm
