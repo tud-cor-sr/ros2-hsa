@@ -46,7 +46,9 @@ class PlanarSimNode(Node):
         # parameter for specifying a different axial rest strain
         self.declare_parameter("sigma_a_eq", self.params["sigma_a_eq"].mean().item())
         sigma_a_eq = self.get_parameter("sigma_a_eq").value
-        self.params["sigma_a_eq"] = sigma_a_eq * jnp.ones_like(self.params["sigma_a_eq"])
+        self.params["sigma_a_eq"] = sigma_a_eq * jnp.ones_like(
+            self.params["sigma_a_eq"]
+        )
         # actual rest strain
         self.xi_eq = sys_helpers["rest_strains_fn"](self.params)  # rest strains
 
@@ -65,10 +67,14 @@ class PlanarSimNode(Node):
 
         self.ode_fn = planar_hsa.ode_factory(dynamical_matrices_fn, self.params)
         self.declare_parameter("ode_solver_class", "Dopri5")
-        self.ode_solver = getattr(diffrax, self.get_parameter("ode_solver_class").value)()
+        self.ode_solver = getattr(
+            diffrax, self.get_parameter("ode_solver_class").value
+        )()
 
         @jit
-        def simulation_fn(_t0: Array, _t1: Array, _x0: Array, _phi: Array = jnp.zeros_like(self.phi)) -> Array:
+        def simulation_fn(
+            _t0: Array, _t1: Array, _x0: Array, _phi: Array = jnp.zeros_like(self.phi)
+        ) -> Array:
             """
             Simulate the system for a given control input.
             Args:
@@ -96,10 +102,14 @@ class PlanarSimNode(Node):
         # jit the simulation function
         x0_dummy = jnp.zeros((2 * self.n_q,))
         phi_dummy = jnp.zeros_like(self.params["roff"].flatten())
-        x1_dummy = self.simulation_fn(jnp.array(0.0), jnp.array(self.control_dt), x0_dummy, phi_dummy)
+        x1_dummy = self.simulation_fn(
+            jnp.array(0.0), jnp.array(self.control_dt), x0_dummy, phi_dummy
+        )
 
         # initialize time
-        self.clock_start_time = self.get_clock().now().nanoseconds * 1e-9  # time in seconds
+        self.clock_start_time = (
+            self.get_clock().now().nanoseconds * 1e-9
+        )  # time in seconds
         self.clock_time = self.clock_start_time
 
         # create a publisher for the configuration and its velocity
@@ -118,9 +128,7 @@ class PlanarSimNode(Node):
         self.control_timer = self.create_timer(self.control_dt, self.call_controller)
 
         # create the subscription to the control input
-        self.declare_parameter(
-            "control_input_topic", "control_input"
-        )
+        self.declare_parameter("control_input_topic", "control_input")
         self.phi_sub = self.create_subscription(
             Float64MultiArray,
             self.get_parameter("control_input_topic").value,
@@ -132,7 +140,7 @@ class PlanarSimNode(Node):
 
     def phi_callback(self, msg: Float64MultiArray):
         # demanded rod twist angles
-        self.phi = jnp.array(msg.data)    
+        self.phi = jnp.array(msg.data)
 
     def call_controller(self):
         # the current clock time
@@ -149,7 +157,7 @@ class PlanarSimNode(Node):
         x1 = self.simulation_fn(t0, t1, x0, self.phi)
 
         # update the state of the system
-        self.q, self.q_d = x1[:self.n_q], x1[self.n_q:]
+        self.q, self.q_d = x1[: self.n_q], x1[self.n_q :]
 
         # publish the configuration
         configuration_msg = PlanarCsConfiguration(
@@ -161,9 +169,7 @@ class PlanarSimNode(Node):
         self.configuration_pub.publish(configuration_msg)
 
         # publish configuration velocity
-        configuration_velocity_msg = Float64MultiArray(
-            data=self.q_d.tolist()
-        )
+        configuration_velocity_msg = Float64MultiArray(data=self.q_d.tolist())
         self.configuration_velocity_pub.publish(configuration_velocity_msg)
 
         # update the clock time
@@ -185,5 +191,5 @@ def main(args=None):
     rclpy.shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
