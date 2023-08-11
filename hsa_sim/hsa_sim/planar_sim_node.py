@@ -60,7 +60,7 @@ class PlanarSimNode(Node):
         # initialize ODE solver
         self.declare_parameter("sim_dt", 1e-4)
         self.sim_dt = jnp.array(self.get_parameter("sim_dt").value)
-        self.declare_parameter("control_frequency", 100)
+        self.declare_parameter("control_frequency", 50)
         self.control_frequency = self.get_parameter("control_frequency").value
         self.control_dt = 1 / self.control_frequency
 
@@ -123,8 +123,8 @@ class PlanarSimNode(Node):
             10,
         )
 
-        # initialize timer for the control loop
-        self.control_timer = self.create_timer(self.control_dt, self.call_controller)
+        # initialize timer for the simulation loop
+        self.sim_timer = self.create_timer(self.control_dt, self.simulate_system)
 
         # create the subscription to the control input
         self.declare_parameter("control_input_topic", "control_input")
@@ -141,7 +141,7 @@ class PlanarSimNode(Node):
         # demanded rod twist angles
         self.phi = jnp.array(msg.data)
 
-    def call_controller(self):
+    def simulate_system(self):
         # the current clock time
         clock_current_time_obj = self.get_clock().now()
         clock_current_time = clock_current_time_obj.nanoseconds * 1e-9
