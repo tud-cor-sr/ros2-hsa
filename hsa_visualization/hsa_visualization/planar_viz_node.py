@@ -110,7 +110,7 @@ class PlanarVizNode(Node):
         self.q_msg = msg
 
     def render_robot(self):
-        self.get_logger().info(f"Rendering robot for configuration: {self.q}")
+        # self.get_logger().info(f"Rendering robot for configuration: {self.q}")
         img = self.rendering_fn(self.q)
 
         img_msg = self.ros_opencv_bridge.cv2_to_imgmsg(img)
