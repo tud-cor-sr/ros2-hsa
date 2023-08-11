@@ -10,7 +10,6 @@ from jax import numpy as jnp
 import rclpy
 from rclpy.node import Node
 from pathlib import Path
-from scipy.spatial.transform import Rotation as R
 
 from example_interfaces.msg import Float64MultiArray
 from geometry_msgs.msg import Pose2D
