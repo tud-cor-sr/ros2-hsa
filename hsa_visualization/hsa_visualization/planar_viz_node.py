@@ -19,7 +19,7 @@ import jsrm
 from jsrm.parameters.hsa_params import PARAMS_CONTROL
 from jsrm.systems import planar_hsa
 
-from hsa_visualization.planar_opencv_renderer import draw_robot
+from hsa_visualization.planar_opencv_renderer import robot_rendering_factory
 
 
 class PlanarVizNode(Node):
@@ -36,9 +36,9 @@ class PlanarVizNode(Node):
         (
             forward_kinematics_virtual_backbone_fn,
             forward_kinematics_end_effector_fn,
-            jacobian_end_effector_fn,
-            inverse_kinematics_end_effector_fn,
-            dynamical_matrices_fn,
+            _,
+            _,
+            _,
             sys_helpers,
         ) = planar_hsa.factory(sym_exp_filepath)
 
@@ -61,16 +61,16 @@ class PlanarVizNode(Node):
         # initialize the rendering function
         self.declare_parameter("open_cv2_window", True)
         self.open_cv2_window = self.get_parameter("open_cv2_window").value
-        self.declare_parameter("image_width", 700)
-        self.declare_parameter("image_height", 700)
-        self.rendering_fn = partial(
-            draw_robot,
+        self.declare_parameter("image_width", 400)
+        self.declare_parameter("image_height", 400)
+        self.rendering_fn = robot_rendering_factory(
             forward_kinematics_virtual_backbone_fn,
             sys_helpers["forward_kinematics_rod_fn"],
             sys_helpers["forward_kinematics_platform_fn"],
-            self.params,
+            params=self.params,
             width=self.get_parameter("image_width").value,
             height=self.get_parameter("image_height").value,
+            num_points=25
         )
         if self.open_cv2_window:
             cv2.resizeWindow(
@@ -95,7 +95,7 @@ class PlanarVizNode(Node):
             10,
         )
 
-        self.declare_parameter("rendering_frequency", 5.0)
+        self.declare_parameter("rendering_frequency", 10.0)
         self.rendering_timer = self.create_timer(
             1 / self.get_parameter("rendering_frequency").value, self.render_robot
         )
