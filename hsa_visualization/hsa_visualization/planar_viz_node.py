@@ -1,3 +1,4 @@
+import cv2  # importing cv2
 import cv_bridge
 from functools import partial
 from jax import config as jax_config
@@ -54,9 +55,12 @@ class PlanarVizNode(Node):
 
         # initialize state and control input
         self.q = jnp.zeros_like(self.xi_eq)  # generalized coordinates
+        self.q_msg = PlanarCsConfiguration()
         self.n_q = self.q.shape[0]  # number of generalized coordinates
 
         # initialize the rendering function
+        self.declare_parameter("open_cv2_window", True)
+        self.open_cv2_window = self.get_parameter("open_cv2_window").value
         self.declare_parameter("image_width", 700)
         self.declare_parameter("image_height", 700)
         self.rendering_fn = partial(
@@ -68,6 +72,12 @@ class PlanarVizNode(Node):
             width=self.get_parameter("image_width").value,
             height=self.get_parameter("image_height").value,
         )
+        if self.open_cv2_window:
+            cv2.resizeWindow(
+                "Planar HSA rendering",
+                self.get_parameter("image_width").value,
+                self.get_parameter("image_height").value,
+            )
 
         # initialize bridge for converting between ROS and OpenCV images
         self.ros_opencv_bridge = cv_bridge.CvBridge()
@@ -85,6 +95,11 @@ class PlanarVizNode(Node):
             10,
         )
 
+        self.declare_parameter("rendering_frequency", 5.0)
+        self.rendering_timer = self.create_timer(
+            1 / self.get_parameter("rendering_frequency").value, self.render_robot
+        )
+
     def configuration_callback(self, msg: PlanarCsConfiguration):
         """
         Callback for the configuration topic.
@@ -92,11 +107,19 @@ class PlanarVizNode(Node):
         """
         # set the current configuration
         self.q = jnp.array([msg.kappa_b, msg.sigma_sh, msg.sigma_a])
+        self.q_msg = msg
+
+    def render_robot(self):
+        self.get_logger().info(f"Rendering robot for configuration: {self.q}")
         img = self.rendering_fn(self.q)
 
         img_msg = self.ros_opencv_bridge.cv2_to_imgmsg(img)
-        img_msg.header = msg.header
+        img_msg.header = self.q_msg.header
         self.rendering_pub.publish(img_msg)
+
+        if self.open_cv2_window:
+            cv2.imshow("Planar HSA rendering", img)
+            cv2.waitKey(1)  # wait 1ms to prevent waiting for key press
 
 
 def main(args=None):
@@ -106,6 +129,9 @@ def main(args=None):
     node = PlanarVizNode()
 
     rclpy.spin(node)
+
+    # destroy all CV2 windows
+    cv2.destroyAllWindows()
 
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically
