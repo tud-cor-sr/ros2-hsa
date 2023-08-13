@@ -73,6 +73,7 @@ class PlanarVizNode(Node):
             num_points=25
         )
         if self.open_cv2_window:
+            cv2.namedWindow("Planar HSA rendering",cv2.WINDOW_NORMAL)
             cv2.resizeWindow(
                 "Planar HSA rendering",
                 self.get_parameter("image_width").value,
