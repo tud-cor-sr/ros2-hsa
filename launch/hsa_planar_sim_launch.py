@@ -21,6 +21,9 @@ def generate_launch_description():
             package="hsa_visualization",
             executable="planar_viz_node",
             name="visualization",
+            parameters=[{
+                "rendering_frequency": 20.0,
+            }]
         )
     ]
 
