@@ -8,6 +8,7 @@ from typing import Callable, Dict
 
 
 def robot_rendering_factory(
+    forward_kinematics_end_effector_fn: Callable,
     forward_kinematics_virtual_backbone_fn: Callable,
     forward_kinematics_rod_fn: Callable,
     forward_kinematics_platform_fn: Callable,
@@ -19,6 +20,7 @@ def robot_rendering_factory(
     """
     Factory function for rendering the robot.
     Args:
+        forward_kinematics_end_effector_fn: function for computing the forward kinematics of the end-effector
         forward_kinematics_virtual_backbone_fn: function for computing the forward kinematics of the virtual backbone
         forward_kinematics_rod_fn: function for computing the forward kinematics of the rods
         forward_kinematics_platform_fn: function for computing the forward kinematics of the platforms
@@ -40,24 +42,33 @@ def robot_rendering_factory(
     backbone_color = (255, 0, 0)  # blue robot color in BGR
     rod_color = (0, 255, 0)  # green rod color in BGR
     platform_color = (0, 0, 255)  # red platform color in BGR
+    end_effector_color = (0, 0, 0)  # black color in BGR
+    setpoint_color = (255, 0, 0)  # blue robot color in BGR
 
-    batched_forward_kinematics_virtual_backbone_fn = jit(vmap(
-        partial(forward_kinematics_virtual_backbone_fn, params), 
-        in_axes=(None, 0), out_axes=-1
-    ))
-    batched_forward_kinematics_rod_fn = jit(vmap(
-        partial(forward_kinematics_rod_fn, params), 
-        in_axes=(None, 0, None), out_axes=-1
-    ))
-    batched_forward_kinematics_platform_fn = jit(vmap(
-        partial(forward_kinematics_platform_fn, params), 
-        in_axes=(None, 0), out_axes=0
-    ))
-    
-    # in x-y pixel coordinates
-    uv_robot_origin = onp.array(
-        [w // 2, h * (1 - 0.1)], dtype=jnp.int32
+    batched_forward_kinematics_virtual_backbone_fn = jit(
+        vmap(
+            partial(forward_kinematics_virtual_backbone_fn, params),
+            in_axes=(None, 0),
+            out_axes=-1,
+        )
     )
+    batched_forward_kinematics_rod_fn = jit(
+        vmap(
+            partial(forward_kinematics_rod_fn, params),
+            in_axes=(None, 0, None),
+            out_axes=-1,
+        )
+    )
+    batched_forward_kinematics_platform_fn = jit(
+        vmap(
+            partial(forward_kinematics_platform_fn, params),
+            in_axes=(None, 0),
+            out_axes=0,
+        )
+    )
+
+    # in x-y pixel coordinates
+    uv_robot_origin = onp.array([w // 2, h * (1 - 0.1)], dtype=jnp.int32)
 
     # we use for plotting N points along the length of the robot
     s_ps = jnp.linspace(0, jnp.sum(params["l"]), num_points)
@@ -78,32 +89,30 @@ def robot_rendering_factory(
         # invert the v pixel coordinate
         uv = uv_robot_origin + uv_off
         return uv
-    
+
     batched_chi2u = jit(vmap(chi2u, in_axes=-1, out_axes=0))
 
-    def draw_robot_fn(q: Array) -> onp.ndarray:
+    def draw_robot_fn(q: Array, chiee_des: Array = None) -> onp.ndarray:
         """
         Draw the robot for a given configuration.
         Args:
             q: configuration of the robot of shape (3)
         """
         # poses along the robot of shape (3, N)
-        chiv_ps = batched_forward_kinematics_virtual_backbone_fn(
-            q, s_ps
-        )  
+        chiv_ps = batched_forward_kinematics_virtual_backbone_fn(q, s_ps)
         # poses of virtual backbone
         chiL_ps = batched_forward_kinematics_rod_fn(q, s_ps, 0)  # poses of left rod
         chiR_ps = batched_forward_kinematics_rod_fn(q, s_ps, 1)  # poses of left rod
         # poses of the platforms
-        chip_ps = batched_forward_kinematics_platform_fn(
-            q, jnp.arange(0, num_segments)
-        )
+        chip_ps = batched_forward_kinematics_platform_fn(q, jnp.arange(0, num_segments))
 
         # initialize background to white
         img = 255 * onp.ones((w, h, 3), dtype=jnp.uint8)
 
         # draw base
-        cv2.rectangle(img, (0, uv_robot_origin[1]), (w, h), color=base_color, thickness=-1)
+        cv2.rectangle(
+            img, (0, uv_robot_origin[1]), (w, h), color=base_color, thickness=-1
+        )
 
         # draw the virtual backbone
         # add the first point of the proximal cap and the last point of the distal cap
@@ -176,7 +185,9 @@ def robot_rendering_factory(
             axis=1,
         )
         curve_rod_right = onp.array(batched_chi2u(chiR_ps))
-        cv2.polylines(img, [curve_rod_right], isClosed=False, color=rod_color, thickness=10)
+        cv2.polylines(
+            img, [curve_rod_right], isClosed=False, color=rod_color, thickness=10
+        )
 
         # draw the platform
         for i in range(chip_ps.shape[0]):
@@ -218,6 +229,27 @@ def robot_rendering_factory(
             # cv2.polylines(img, [onp.array(batched_chi2u(platform_curve))], isClosed=True, color=platform_color, thickness=5)
             cv2.fillPoly(
                 img, [onp.array(batched_chi2u(platform_curve))], color=platform_color
+            )
+
+        if chiee_des is not None:
+            # draw the setpoint / desired end-effector pose
+            setpoint = chi2u(chiee_des)
+            cv2.circle(
+                img,
+                (setpoint[0].item(), setpoint[1].item()),
+                9,
+                setpoint_color,
+                thickness=-1,
+            )
+
+            # draw the present end-effector pose
+            end_effector = chi2u(forward_kinematics_end_effector_fn(params, q))
+            cv2.circle(
+                img,
+                (end_effector[0].item(), end_effector[1].item()),
+                8,
+                end_effector_color,
+                thickness=-1,
             )
 
         return img

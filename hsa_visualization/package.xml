@@ -8,6 +8,7 @@
   <license>MIT</license>
 
   <depend>example_interfaces</depend>
+  <depend>hsa_control_interfaces</depend>
   <depend>mocap_optitrack_interfaces</depend>
   <depend>sensor_msgs</depend>
 

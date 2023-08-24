@@ -11,7 +11,7 @@ import rclpy
 from rclpy.node import Node
 from pathlib import Path
 
-from example_interfaces.msg import Float64MultiArray
+from hsa_control_interfaces.msg import PlanarSetpoint
 from mocap_optitrack_interfaces.msg import PlanarCsConfiguration
 from sensor_msgs.msg import Image
 
@@ -64,16 +64,17 @@ class PlanarVizNode(Node):
         self.declare_parameter("image_width", 400)
         self.declare_parameter("image_height", 400)
         self.rendering_fn = robot_rendering_factory(
+            forward_kinematics_end_effector_fn,
             forward_kinematics_virtual_backbone_fn,
             sys_helpers["forward_kinematics_rod_fn"],
             sys_helpers["forward_kinematics_platform_fn"],
             params=self.params,
             width=self.get_parameter("image_width").value,
             height=self.get_parameter("image_height").value,
-            num_points=25
+            num_points=25,
         )
         if self.open_cv2_window:
-            cv2.namedWindow("Planar HSA rendering",cv2.WINDOW_NORMAL)
+            cv2.namedWindow("Planar HSA rendering", cv2.WINDOW_NORMAL)
             cv2.resizeWindow(
                 "Planar HSA rendering",
                 self.get_parameter("image_width").value,
@@ -96,6 +97,15 @@ class PlanarVizNode(Node):
             10,
         )
 
+        self.chiee_des = None
+        self.declare_parameter("setpoint_topic", "setpoint")
+        self.setpoint_sub = self.create_subscription(
+            PlanarSetpoint,
+            self.get_parameter("setpoint_topic").value,
+            self.setpoint_callback,
+            10,
+        )
+
         self.declare_parameter("rendering_frequency", 10.0)
         self.rendering_timer = self.create_timer(
             1 / self.get_parameter("rendering_frequency").value, self.render_robot
@@ -110,9 +120,14 @@ class PlanarVizNode(Node):
         self.q = jnp.array([msg.kappa_b, msg.sigma_sh, msg.sigma_a])
         self.q_msg = msg
 
+    def setpoint_callback(self, msg: PlanarSetpoint):
+        self.chiee_des = jnp.array(
+            [msg.chiee_des.x, msg.chiee_des.y, msg.chiee_des.theta]
+        )
+
     def render_robot(self):
         # self.get_logger().info(f"Rendering robot for configuration: {self.q}")
-        img = self.rendering_fn(self.q)
+        img = self.rendering_fn(self.q, self.chiee_des)
 
         img_msg = self.ros_opencv_bridge.cv2_to_imgmsg(img)
         img_msg.header = self.q_msg.header
