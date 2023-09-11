@@ -14,6 +14,7 @@ setup(
         "diffrax",
         "dill",
         "jax",
+        "jsrm",
         "numpy",
         "pandas",
         "setuptools",
