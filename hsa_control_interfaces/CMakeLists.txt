@@ -17,14 +17,16 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(common_interfaces REQUIRED)
 find_package(example_interfaces REQUIRED)
 find_package(mocap_optitrack_interfaces REQUIRED)
+find_package(std_msgs REQUIRED)
 
 set(msg_files
   "msg/PlanarSetpoint.msg"
+  "msg/PlanarSetpointControllerInfo.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
-  DEPENDENCIES builtin_interfaces common_interfaces example_interfaces mocap_optitrack_interfaces
+  DEPENDENCIES builtin_interfaces common_interfaces example_interfaces mocap_optitrack_interfaces std_msgs
 )
 
 ament_export_dependencies(rosidl_default_runtime)
