@@ -12,7 +12,6 @@ from rclpy.node import Node
 from pathlib import Path
 
 from example_interfaces.msg import Float64MultiArray
-from geometry_msgs.msg import Pose2D
 from mocap_optitrack_interfaces.msg import PlanarCsConfiguration
 
 import jsrm

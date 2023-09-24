@@ -11,6 +11,7 @@ from pathlib import Path
 from scipy.spatial.transform import Rotation as R
 
 from geometry_msgs.msg import Pose2D
+from hsa_control_interfaces.msg import Pose2DStamped
 from mocap_optitrack_interfaces.msg import RigidBodyArray, PlanarCsConfiguration
 
 import jsrm
@@ -36,7 +37,7 @@ class PlanarCsIkNode(Node):
 
         self.declare_parameter("end_effector_pose_topic", "end_effector_pose")
         self.end_effector_pose_pub = self.create_publisher(
-            Pose2D, self.get_parameter("end_effector_pose_topic").value, 10
+            Pose2DStamped, self.get_parameter("end_effector_pose_topic").value, 10
         )
 
         self.declare_parameter("configuration_topic", "configuration")
@@ -117,10 +118,13 @@ class PlanarCsIkNode(Node):
             ]
         )
 
-        end_effector_pose_msg = Pose2D(
+        ee_pose_msg = Pose2D(
             x=chiee[0].item(), y=chiee[1].item(), theta=chiee[2].item()
         )
-        self.end_effector_pose_pub.publish(end_effector_pose_msg)
+        ee_pose_stamped_msg = Pose2DStamped(
+            header=msg.header.stamp, pose=ee_pose_msg
+        )
+        self.end_effector_pose_pub.publish(ee_pose_stamped_msg)
 
         # apply inverse kinematics
         q = self.inverse_kinematics_end_effector_fn(chiee)

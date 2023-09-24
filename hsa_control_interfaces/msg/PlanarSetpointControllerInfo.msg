@@ -1,7 +1,8 @@
 # Messages
 std_msgs/Header header
 hsa_control_interfaces/PlanarSetpoint planar_setpoint  # desired setpoint 
-geometry_msgs/Pose2D chiee  # current pose of the end-effector
+hsa_control_interfaces/Pose2DStamped chiee  # current pose of the end-effector
+hsa_control_interfaces/Pose2DStamped chiee_d  # current velocity / twist of the end-effector
 mocap_optitrack_interfaces/PlanarCsConfiguration q  # current configuration
 mocap_optitrack_interfaces/PlanarCsConfiguration q_d  # current velocity of configuration
 float64[] e_int  # integrated error
