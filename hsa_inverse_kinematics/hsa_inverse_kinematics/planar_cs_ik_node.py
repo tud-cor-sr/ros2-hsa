@@ -122,7 +122,7 @@ class PlanarCsIkNode(Node):
             x=chiee[0].item(), y=chiee[1].item(), theta=chiee[2].item()
         )
         ee_pose_stamped_msg = Pose2DStamped(
-            header=msg.header.stamp, pose=ee_pose_msg
+            header=msg.header, pose=ee_pose_msg
         )
         self.end_effector_pose_pub.publish(ee_pose_stamped_msg)
 
@@ -131,7 +131,7 @@ class PlanarCsIkNode(Node):
 
         # publish configuration
         configuration_msg = PlanarCsConfiguration()
-        configuration_msg.header.stamp = msg.header.stamp
+        configuration_msg.header = msg.header
         configuration_msg.kappa_b = q[0].item()
         configuration_msg.sigma_sh = q[1].item()
         configuration_msg.sigma_a = q[2].item()
