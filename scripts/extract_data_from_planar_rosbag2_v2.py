@@ -121,7 +121,7 @@ def main():
     }
 
     # save data
-    with open(str(ROSBAG2_PATH.with_suffix(".pkl")), "wb") as f:
+    with open(str(ROSBAG2_PATH.with_suffix(".dill")), "wb") as f:
         dill.dump(data_ts, f)
 
 
