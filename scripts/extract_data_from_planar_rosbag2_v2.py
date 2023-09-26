@@ -108,7 +108,7 @@ def main():
 
     for key, value in controller_info_ts.items():
         if len(value) == 0:
-            continue
+            controller_info_ts.pop(key)
         controller_info_ts[key] = np.stack(value)
 
     data_ts = {
