@@ -9,8 +9,9 @@ from pathlib import Path
 from tqdm import tqdm
 
 
+experiment_name = "20230925_142209"
 ROSBAG2_PATH = Path(
-    "/home/mstoelzle/phd/rosbags/rosbag2_20230925_142729/rosbag2_20230925_142729_0.db3"
+    f"/home/mstoelzle/phd/rosbags/rosbag2_{experiment_name}/rosbag2_{experiment_name}_0.db3"
 )
 
 
