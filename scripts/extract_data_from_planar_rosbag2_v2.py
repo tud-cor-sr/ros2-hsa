@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 
 ROSBAG2_PATH = Path(
-    "/home/mstoelzle/phd/rosbags/rosbag2_20230922_161419/rosbag2_20230922_161419_0.db3"
+    "/home/mstoelzle/phd/rosbags/rosbag2_20230925_142729/rosbag2_20230925_142729_0.db3"
 )
 
 
@@ -54,23 +54,22 @@ def main():
             ts_q_d_ls.append(time)
             q_d_ls.append(np.array([msg["kappa_b"], msg["sigma_sh"], msg["sigma_a"]]))
         elif topic == "/end_effector_pose":
-            chiee = np.array([msg["x"], msg["y"], msg["theta"]])
+            pose_msg = msg["pose"]
+            chiee = np.array([pose_msg["x"], pose_msg["y"], pose_msg["theta"]])
             ts_chiee_ls.append(time)
             chiee_ls.append(chiee)
         elif topic == "/controller_info":
             controller_info_ts["ts"].append(time)
 
-            print(f"Message of topic controller info at time {time}")
-
             if msg["planar_setpoint"] is not None:
                 planar_setpoint = msg["planar_setpoint"]
                 if planar_setpoint["chiee_des"] is not None:
                     controller_info_ts["chiee_des"].append(
-                        np.array([planar_setpoint["x"], planar_setpoint["y"], planar_setpoint["theta"]])
+                        np.array([planar_setpoint["chiee_des"]["x"], planar_setpoint["chiee_des"]["y"], planar_setpoint["chiee_des"]["theta"]])
                     )
                 if planar_setpoint["q_des"] is not None:
                     controller_info_ts["q_des"].append(
-                        np.array([planar_setpoint["kappa_b"], planar_setpoint["sigma_sh"], planar_setpoint["sigma_a"]])
+                        np.array([planar_setpoint["q_des"]["kappa_b"], planar_setpoint["q_des"]["sigma_sh"], planar_setpoint["q_des"]["sigma_a"]])
                     )
                 if planar_setpoint["phi_ss"] is not None:
                     controller_info_ts["phi_ss"].append(planar_setpoint["phi_ss"])
@@ -78,9 +77,11 @@ def main():
                     controller_info_ts["optimality_error"].append(planar_setpoint["optimality_error"])
 
             if msg["chiee"] is not None:
-                controller_info_ts["chiee"].append(np.array([msg["chiee"]["x"], msg["chiee"]["y"], msg["chiee"]["theta"]]))
+                pose_msg = msg["chiee"]["pose"]
+                controller_info_ts["chiee"].append(np.array([pose_msg["x"], pose_msg["y"], pose_msg["theta"]]))
             if msg["chiee_d"] is not None:
-                controller_info_ts["chiee_d"].append(np.array([msg["chiee_d"]["x"], msg["chiee_d"]["y"], msg["chiee_d"]["theta"]]))
+                pose_msg = msg["chiee_d"]["pose"]
+                controller_info_ts["chiee_d"].append(np.array([pose_msg["x"], pose_msg["y"], pose_msg["theta"]]))
 
             if msg["q"] is not None:
                 controller_info_ts["q"].append(np.array([msg["q"]["kappa_b"], msg["q"]["sigma_sh"], msg["q"]["sigma_a"]]))
