@@ -16,7 +16,7 @@ from mocap_optitrack_interfaces.msg import PlanarCsConfiguration
 from sensor_msgs.msg import Image
 
 import jsrm
-from jsrm.parameters.hsa_params import PARAMS_CONTROL
+from jsrm.parameters.hsa_params import PARAMS_FPU_CONTROL
 from jsrm.systems import planar_hsa
 
 from hsa_visualization.planar_opencv_renderer import robot_rendering_factory
@@ -42,7 +42,7 @@ class PlanarVizNode(Node):
             sys_helpers,
         ) = planar_hsa.factory(sym_exp_filepath)
 
-        self.params = PARAMS_CONTROL
+        self.params = PARAMS_FPU_CONTROL
 
         # parameter for specifying a different axial rest strain
         self.declare_parameter("sigma_a_eq", self.params["sigma_a_eq"].mean().item())

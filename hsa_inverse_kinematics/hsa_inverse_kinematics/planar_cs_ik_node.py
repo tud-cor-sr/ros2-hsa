@@ -15,7 +15,7 @@ from hsa_control_interfaces.msg import Pose2DStamped
 from mocap_optitrack_interfaces.msg import RigidBodyArray, PlanarCsConfiguration
 
 import jsrm
-from jsrm.parameters.hsa_params import PARAMS_CONTROL
+from jsrm.parameters.hsa_params import PARAMS_FPU_CONTROL
 from jsrm.systems import planar_hsa
 
 
@@ -55,7 +55,7 @@ class PlanarCsIkNode(Node):
             sym_exp_filepath
         )
 
-        self.params = PARAMS_CONTROL
+        self.params = PARAMS_FPU_CONTROL
 
         # parameter for specifying a different axial rest strain
         self.declare_parameter("sigma_a_eq", self.params["sigma_a_eq"].mean().item())
