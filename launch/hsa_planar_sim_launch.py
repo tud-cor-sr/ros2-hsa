@@ -9,6 +9,14 @@ RECORD_BAG = False  # Record data to rosbag file
 BAG_PATH = "/home/mstoelzle/phd/rosbags"
 LOG_LEVEL = "warn"
 
+common_params = {
+    "hsa_material": "fpu",
+    "payload_mass": 0.0,  # kg
+}
+viz_params = common_params | {
+    "rendering_frequency": 20.0,
+}
+
 
 def generate_launch_description():
     launch_actions = [
@@ -16,14 +24,13 @@ def generate_launch_description():
             package="hsa_sim",
             executable="planar_sim_node",
             name="simulation",
+            parameters=[common_params],
         ),
         Node(
             package="hsa_visualization",
             executable="planar_viz_node",
             name="visualization",
-            parameters=[{
-                "rendering_frequency": 20.0,
-            }]
+            parameters=[viz_params]
         )
     ]
 

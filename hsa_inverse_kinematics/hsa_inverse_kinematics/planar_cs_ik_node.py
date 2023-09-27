@@ -15,7 +15,7 @@ from hsa_control_interfaces.msg import Pose2DStamped
 from mocap_optitrack_interfaces.msg import RigidBodyArray, PlanarCsConfiguration
 
 import jsrm
-from jsrm.parameters.hsa_params import PARAMS_FPU_CONTROL
+from jsrm.parameters.hsa_params import PARAMS_FPU_CONTROL, PARAMS_EPU_CONTROL
 from jsrm.systems import planar_hsa
 
 
@@ -55,7 +55,14 @@ class PlanarCsIkNode(Node):
             sym_exp_filepath
         )
 
-        self.params = PARAMS_FPU_CONTROL
+        self.declare_parameter("hsa_material", "fpu")
+        hsa_material = self.get_parameter("hsa_material").value
+        if hsa_material == "fpu":
+            self.params = PARAMS_FPU_CONTROL.copy()
+        elif hsa_material == "epu":
+            self.params = PARAMS_EPU_CONTROL.copy()
+        else:
+            raise ValueError(f"Unknown HSA material: {hsa_material}")
 
         # parameter for specifying a different axial rest strain
         self.declare_parameter("sigma_a_eq", self.params["sigma_a_eq"].mean().item())

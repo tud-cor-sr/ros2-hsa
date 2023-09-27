@@ -9,6 +9,11 @@ RECORD_BAG = False  # Record data to rosbag file
 BAG_PATH = "/home/mstoelzle/phd/rosbags"
 LOG_LEVEL = "warn"
 
+ros_params = {
+    "hsa_material": "fpu",
+    "payload_mass": 0.0,  # kg
+}
+
 
 def generate_launch_description():
     # Create the NatNet client node
@@ -43,6 +48,7 @@ def generate_launch_description():
             package="hsa_inverse_kinematics",
             executable="planar_cs_ik_node",
             name="inverse_kinematics",
+            parameters=[ros_params],
         ),
     ]
 
