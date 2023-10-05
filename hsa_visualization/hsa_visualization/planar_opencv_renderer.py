@@ -49,8 +49,8 @@ def robot_rendering_factory(
         backbone_color = (255, 0, 0)  # blue robot color in BGR
         rod_color = (255, 0, 0)  # blue color in BGR
         platform_color = (255, 0, 0)  # blue color in BGR
-        end_effector_color = (0, 255, 0)  # green color in BGR
-        setpoint_color = (255, 255, 255)  # white color in BGR
+        end_effector_color = (255, 255, 255)  # white color in BGR
+        setpoint_color = (0, 0, 255)  # red color in BGR
     else:
         background_color = (255, 255, 255)  # white in BGR
         base_color = (0, 0, 0)  # black base color in BGR
@@ -264,7 +264,7 @@ def robot_rendering_factory(
             cv2.circle(
                 img,
                 (setpoint[0].item(), setpoint[1].item()),
-                12,
+                14,
                 setpoint_color,
                 thickness=-1,
             )
@@ -274,7 +274,7 @@ def robot_rendering_factory(
             cv2.circle(
                 img,
                 (end_effector[0].item(), end_effector[1].item()),
-                8,
+                11,
                 end_effector_color,
                 thickness=-1,
             )
