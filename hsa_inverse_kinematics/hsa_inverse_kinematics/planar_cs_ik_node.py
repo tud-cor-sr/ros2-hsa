@@ -140,9 +140,7 @@ class PlanarCsIkNode(Node):
         ee_pose_msg = Pose2D(
             x=chiee[0].item(), y=chiee[1].item(), theta=chiee[2].item()
         )
-        ee_pose_stamped_msg = Pose2DStamped(
-            header=msg.header, pose=ee_pose_msg
-        )
+        ee_pose_stamped_msg = Pose2DStamped(header=msg.header, pose=ee_pose_msg)
         self.end_effector_pose_pub.publish(ee_pose_stamped_msg)
 
         # apply inverse kinematics

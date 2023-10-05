@@ -66,28 +66,58 @@ def main():
                 planar_setpoint = msg["planar_setpoint"]
                 if planar_setpoint["chiee_des"] is not None:
                     controller_info_ts["chiee_des"].append(
-                        np.array([planar_setpoint["chiee_des"]["x"], planar_setpoint["chiee_des"]["y"], planar_setpoint["chiee_des"]["theta"]])
+                        np.array(
+                            [
+                                planar_setpoint["chiee_des"]["x"],
+                                planar_setpoint["chiee_des"]["y"],
+                                planar_setpoint["chiee_des"]["theta"],
+                            ]
+                        )
                     )
                 if planar_setpoint["q_des"] is not None:
                     controller_info_ts["q_des"].append(
-                        np.array([planar_setpoint["q_des"]["kappa_b"], planar_setpoint["q_des"]["sigma_sh"], planar_setpoint["q_des"]["sigma_a"]])
+                        np.array(
+                            [
+                                planar_setpoint["q_des"]["kappa_b"],
+                                planar_setpoint["q_des"]["sigma_sh"],
+                                planar_setpoint["q_des"]["sigma_a"],
+                            ]
+                        )
                     )
                 if planar_setpoint["phi_ss"] is not None:
                     controller_info_ts["phi_ss"].append(planar_setpoint["phi_ss"])
                 if planar_setpoint["optimality_error"] is not None:
-                    controller_info_ts["optimality_error"].append(planar_setpoint["optimality_error"])
+                    controller_info_ts["optimality_error"].append(
+                        planar_setpoint["optimality_error"]
+                    )
 
             if msg["chiee"] is not None:
                 pose_msg = msg["chiee"]["pose"]
-                controller_info_ts["chiee"].append(np.array([pose_msg["x"], pose_msg["y"], pose_msg["theta"]]))
+                controller_info_ts["chiee"].append(
+                    np.array([pose_msg["x"], pose_msg["y"], pose_msg["theta"]])
+                )
             if msg["chiee_d"] is not None:
                 pose_msg = msg["chiee_d"]["pose"]
-                controller_info_ts["chiee_d"].append(np.array([pose_msg["x"], pose_msg["y"], pose_msg["theta"]]))
+                controller_info_ts["chiee_d"].append(
+                    np.array([pose_msg["x"], pose_msg["y"], pose_msg["theta"]])
+                )
 
             if msg["q"] is not None:
-                controller_info_ts["q"].append(np.array([msg["q"]["kappa_b"], msg["q"]["sigma_sh"], msg["q"]["sigma_a"]]))
+                controller_info_ts["q"].append(
+                    np.array(
+                        [msg["q"]["kappa_b"], msg["q"]["sigma_sh"], msg["q"]["sigma_a"]]
+                    )
+                )
             if msg["q_d"] is not None:
-                controller_info_ts["q_d"].append(np.array([msg["q_d"]["kappa_b"], msg["q_d"]["sigma_sh"], msg["q_d"]["sigma_a"]]))
+                controller_info_ts["q_d"].append(
+                    np.array(
+                        [
+                            msg["q_d"]["kappa_b"],
+                            msg["q_d"]["sigma_sh"],
+                            msg["q_d"]["sigma_a"],
+                        ]
+                    )
+                )
 
             if msg["e_int"] is not None:
                 controller_info_ts["e_int"].append(np.array(msg["e_int"]))
@@ -98,13 +128,16 @@ def main():
                 controller_info_ts["varphi"].append(np.array(msg["varphi"]))
 
             if msg["phi_des_unsat"] is not None:
-                controller_info_ts["phi_des_unsat"].append(np.array(msg["phi_des_unsat"]))
+                controller_info_ts["phi_des_unsat"].append(
+                    np.array(msg["phi_des_unsat"])
+                )
             if msg["phi_des_sat"] is not None:
                 controller_info_ts["phi_des_sat"].append(np.array(msg["phi_des_sat"]))
 
             if msg["motor_goal_angles"] is not None:
-                controller_info_ts["motor_goal_angles"].append(np.array(msg["motor_goal_angles"]))
-            
+                controller_info_ts["motor_goal_angles"].append(
+                    np.array(msg["motor_goal_angles"])
+                )
 
     for key, value in controller_info_ts.items():
         if len(value) == 0:

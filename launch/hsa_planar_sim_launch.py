@@ -34,8 +34,8 @@ def generate_launch_description():
             package="hsa_visualization",
             executable="planar_viz_node",
             name="visualization",
-            parameters=[viz_params]
-        )
+            parameters=[viz_params],
+        ),
     ]
 
     if RECORD_BAG:

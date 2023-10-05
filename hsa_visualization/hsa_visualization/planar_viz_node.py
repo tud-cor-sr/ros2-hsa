@@ -91,7 +91,7 @@ class PlanarVizNode(Node):
             height=self.get_parameter("image_height").value,
             num_points=25,
             inverted_coordinates=True,
-            invert_colors=self.get_parameter("invert_colors")
+            invert_colors=self.get_parameter("invert_colors"),
         )
         if self.open_cv2_window:
             cv2.namedWindow("Planar HSA rendering", cv2.WINDOW_NORMAL)

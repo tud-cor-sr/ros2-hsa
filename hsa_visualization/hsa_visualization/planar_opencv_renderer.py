@@ -17,7 +17,7 @@ def robot_rendering_factory(
     height: int,
     num_points: int = 25,
     inverted_coordinates: bool = False,
-    invert_colors: bool = False
+    invert_colors: bool = False,
 ) -> Callable:
     """
     Factory function for rendering the robot.
