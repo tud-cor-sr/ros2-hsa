@@ -21,6 +21,7 @@ setup(
         "console_scripts": [
             "planar_motor_babbling_node = hsa_actuation.planar_motor_babbling_node:main",
             "present_motor_state_pub_node = hsa_actuation.present_motor_state_pub_node:main",
+            "hsa_planar_actuation_by_msg_node = hsa_actuation.hsa_planar_actuation_by_msg_node:main",
         ],
     },
 )
