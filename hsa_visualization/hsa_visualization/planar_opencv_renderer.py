@@ -264,7 +264,7 @@ def robot_rendering_factory(
             cv2.circle(
                 img,
                 (setpoint[0].item(), setpoint[1].item()),
-                9,
+                12,
                 setpoint_color,
                 thickness=-1,
             )
