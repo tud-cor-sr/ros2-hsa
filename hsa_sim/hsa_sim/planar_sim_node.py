@@ -120,6 +120,7 @@ class PlanarSimNode(Node):
         x1_dummy = self.simulation_fn(
             jnp.array(0.0), jnp.array(self.control_dt), x0_dummy, phi_dummy
         )
+        self.get_logger().info("Finished jitting the simulation_fn.")
 
         # initialize time
         self.clock_start_time = (
