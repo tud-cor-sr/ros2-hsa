@@ -49,7 +49,7 @@ def robot_rendering_factory(
         backbone_color = (255, 0, 0)  # blue robot color in BGR
         rod_color = (255, 0, 0)  # blue color in BGR
         platform_color = (255, 0, 0)  # blue color in BGR
-        end_effector_color = (255, 0, 0)  # blue color in BGR
+        end_effector_color = (0, 255, 0)  # green color in BGR
         setpoint_color = (255, 255, 255)  # white color in BGR
     else:
         background_color = (255, 255, 255)  # white in BGR
