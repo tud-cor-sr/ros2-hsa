@@ -16,6 +16,8 @@ def robot_rendering_factory(
     width: int,
     height: int,
     num_points: int = 25,
+    inverted_coordinates: bool = False,
+    invert_colors: bool = False
 ) -> Callable:
     """
     Factory function for rendering the robot.
@@ -28,6 +30,8 @@ def robot_rendering_factory(
         width: width of the image
         height: height of the image
         num_points: number of points along the length of the robot
+        inverted_coordinates: whether the HSA robot is oriented tip-down (so with inverted xy coordinates)
+        invert_colors: if true, invert the colors. For example make the background black instead of white etc.
     Returns:
         draw_robot_fn: function for drawing the robot as a function of the configuration
     """
@@ -38,12 +42,23 @@ def robot_rendering_factory(
     ppm = h / (
         2.0 * jnp.sum(params["lpc"] + params["l"] + params["ldc"])
     )  # pixel per meter
-    base_color = (0, 0, 0)  # black base color in BGR
-    backbone_color = (255, 0, 0)  # blue robot color in BGR
-    rod_color = (0, 255, 0)  # green rod color in BGR
-    platform_color = (0, 0, 255)  # red platform color in BGR
-    end_effector_color = (0, 0, 0)  # black color in BGR
-    setpoint_color = (255, 0, 0)  # blue robot color in BGR
+
+    if invert_colors:
+        background_color = (0, 0, 0)  # black in BGR
+        base_color = (255, 255, 255)  # white color in BGR
+        backbone_color = (255, 0, 0)  # blue robot color in BGR
+        rod_color = (255, 0, 0)  # blue color in BGR
+        platform_color = (255, 0, 0)  # blue color in BGR
+        end_effector_color = (255, 0, 0)  # blue color in BGR
+        setpoint_color = (255, 255, 255)  # white color in BGR
+    else:
+        background_color = (255, 255, 255)  # white in BGR
+        base_color = (0, 0, 0)  # black base color in BGR
+        backbone_color = (255, 0, 0)  # blue robot color in BGR
+        rod_color = (0, 0, 0)  # black color in BGR
+        platform_color = (0, 0, 0)  # black color in BGR
+        end_effector_color = (255, 0, 0)  # blue color in BGR
+        setpoint_color = (0, 0, 255)  # red color in BGR
 
     batched_forward_kinematics_virtual_backbone_fn = jit(
         vmap(
@@ -68,7 +83,10 @@ def robot_rendering_factory(
     )
 
     # in x-y pixel coordinates
-    uv_robot_origin = onp.array([w // 2, h * (1 - 0.1)], dtype=jnp.int32)
+    if inverted_coordinates:
+        uv_robot_origin = onp.array([w // 2, 0.0], dtype=jnp.int32)
+    else:
+        uv_robot_origin = onp.array([w // 2, h], dtype=jnp.int32)
 
     # we use for plotting N points along the length of the robot
     s_ps = jnp.linspace(0, jnp.sum(params["l"]), num_points)
@@ -84,9 +102,15 @@ def robot_rendering_factory(
             uv: pixel coordinates of shape (2)
         """
         uv_off = jnp.array((chi[:2] * ppm), dtype=jnp.int32)
-        # invert the v pixel coordinate
-        uv_off = uv_off.at[1].set(-uv_off[1])
-        # invert the v pixel coordinate
+
+        if inverted_coordinates:
+            # invert the u pixel coordinate
+            uv_off = uv_off.at[0].set(-uv_off[0])
+        else:
+            # invert the v pixel coordinate
+            uv_off = uv_off.at[1].set(-uv_off[1])
+
+        # add the uv robot origin offset
         uv = uv_robot_origin + uv_off
         return uv
 
@@ -106,13 +130,16 @@ def robot_rendering_factory(
         # poses of the platforms
         chip_ps = batched_forward_kinematics_platform_fn(q, jnp.arange(0, num_segments))
 
-        # initialize background to white
-        img = 255 * onp.ones((w, h, 3), dtype=jnp.uint8)
+        # initialize background
+        img = onp.zeros((w, h, 3), dtype=jnp.uint8)
+        img[..., 0] = background_color[0]
+        img[..., 1] = background_color[1]
+        img[..., 2] = background_color[2]
 
-        # draw base
-        cv2.rectangle(
-            img, (0, uv_robot_origin[1]), (w, h), color=base_color, thickness=-1
-        )
+        # # draw base
+        # cv2.rectangle(
+        #     img, (0, uv_robot_origin[1]), (w, h), color=base_color, thickness=-1
+        # )
 
         # draw the virtual backbone
         # add the first point of the proximal cap and the last point of the distal cap

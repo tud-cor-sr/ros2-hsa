@@ -80,6 +80,7 @@ class PlanarVizNode(Node):
         self.open_cv2_window = self.get_parameter("open_cv2_window").value
         self.declare_parameter("image_width", 400)
         self.declare_parameter("image_height", 400)
+        self.declare_parameter("invert_colors", False)
         self.rendering_fn = robot_rendering_factory(
             forward_kinematics_end_effector_fn,
             forward_kinematics_virtual_backbone_fn,
@@ -89,6 +90,8 @@ class PlanarVizNode(Node):
             width=self.get_parameter("image_width").value,
             height=self.get_parameter("image_height").value,
             num_points=25,
+            inverted_coordinates=True,
+            invert_colors=self.get_parameter("invert_colors")
         )
         if self.open_cv2_window:
             cv2.namedWindow("Planar HSA rendering", cv2.WINDOW_NORMAL)
