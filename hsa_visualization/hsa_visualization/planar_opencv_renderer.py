@@ -190,7 +190,7 @@ def robot_rendering_factory(
             [curve_rod_left],
             isClosed=False,
             color=rod_color,
-            thickness=10,
+            thickness=14,
             # thickness=2*int(ppm * params["rout"].mean(axis=0)[0])
         )
         # add the first point of the proximal cap and the last point of the distal cap
@@ -213,7 +213,7 @@ def robot_rendering_factory(
         )
         curve_rod_right = onp.array(batched_chi2u(chiR_ps))
         cv2.polylines(
-            img, [curve_rod_right], isClosed=False, color=rod_color, thickness=10
+            img, [curve_rod_right], isClosed=False, color=rod_color, thickness=16
         )
 
         # draw the platform
