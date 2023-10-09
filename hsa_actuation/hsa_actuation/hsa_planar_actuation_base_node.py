@@ -7,8 +7,8 @@ from hsa_actuation.hsa_actuation_base_node import HsaActuationBaseNode
 
 
 class HsaPlanarActuationBaseNode(HsaActuationBaseNode):
-    def __init__(self, node_name: str):
-        super().__init__(node_name)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         self.control_handedness = jnp.array([1.0, 1.0])
 

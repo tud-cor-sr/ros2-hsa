@@ -1,3 +1,4 @@
+from jax import Array
 import jax.numpy as jnp
 import rclpy
 
@@ -9,7 +10,19 @@ from hsa_actuation.hsa_planar_actuation_base_node import HsaPlanarActuationBaseN
 
 class HsaPlanarActuationByMsgNode(HsaPlanarActuationBaseNode):
     def __init__(self):
-        super().__init__("hsa_planar_actuation_by_msg_node")
+        super().__init__(
+            node_name="hsa_planar_actuation_by_msg_node",
+            post_present_motor_angles_receival_callback=self.map_motor_angles_to_actuation_coordinates
+        )
+
+        # create the publisher of the current actuation
+        self.phi = jnp.zeros((self.control_handedness.shape[0], ))
+        self.declare_parameter("present_planar_actuation_topic", "present_planar_actuation")
+        self.present_planar_actuation_pub = self.create_publisher(
+            Float64MultiArray,
+            self.get_parameter("present_planar_actuation_topic").value,
+            10,
+        )
 
         # create the subscription to the control input
         self.declare_parameter("control_input_topic", "control_input")
@@ -19,6 +32,14 @@ class HsaPlanarActuationByMsgNode(HsaPlanarActuationBaseNode):
             self.phi_des_callback,
             10,
         )
+
+    def present_motor_angles_callback(self, motor_angles: Array):
+        # map motor angles to actuation coordinates
+        self.phi = self.map_motor_angles_to_actuation_coordinates(self.present_motor_angles)
+
+        # publish the current actuation
+        phi_msg = Float64MultiArray(data=self.phi.tolist())
+        self.present_planar_actuation_pub.publish(phi_msg)
 
     def phi_des_callback(self, msg: Float64MultiArray):
         # demanded rod twist angles
