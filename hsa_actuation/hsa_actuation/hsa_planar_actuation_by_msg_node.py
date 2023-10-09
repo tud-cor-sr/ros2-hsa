@@ -35,7 +35,7 @@ class HsaPlanarActuationByMsgNode(HsaPlanarActuationBaseNode):
 
     def present_motor_angles_callback(self, motor_angles: Array):
         # map motor angles to actuation coordinates
-        self.phi = self.map_motor_angles_to_actuation_coordinates(self.present_motor_angles)
+        self.phi = self.map_motor_angles_to_actuation_coordinates(motor_angles)
 
         # publish the current actuation
         phi_msg = Float64MultiArray(data=self.phi.tolist())
