@@ -3,9 +3,9 @@
 <package format="3">
   <name>hsa_inverse_kinematics</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="maximilian@stoelzle.ch">root</maintainer>
-  <license>TODO: License declaration</license>
+  <description>Inverse kinematics for one segment planar HSA robots.</description>
+  <maintainer email="maximilian@stoelzle.ch">Maximilian Stoelzle</maintainer>
+  <license>MIT</license>
 
   <depend>example_interfaces</depend>
   <depend>geometry_msgs</depend>

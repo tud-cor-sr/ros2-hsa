@@ -15,10 +15,10 @@ setup(
     ],
     install_requires=["dill", "jax", "jsrm", "numpy", "setuptools", "sympy>=1.11"],
     zip_safe=True,
-    maintainer="root",
+    maintainer="Maximilian Stoelzle",
     maintainer_email="maximilian@stoelzle.ch",
-    description="TODO: Package description",
-    license="TODO: License declaration",
+    description="Inverse kinematics for one segment planar HSA robots.",
+    license="MIT",
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [
