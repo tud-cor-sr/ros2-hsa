@@ -81,6 +81,8 @@ class PlanarVizNode(Node):
         self.declare_parameter("image_width", 400)
         self.declare_parameter("image_height", 400)
         self.declare_parameter("invert_colors", False)
+        # x becomes -x and y becomes -y when rendering
+        self.declare_parameter("invert_coordinates", True)
         self.rendering_fn = robot_rendering_factory(
             forward_kinematics_end_effector_fn,
             forward_kinematics_virtual_backbone_fn,
@@ -90,7 +92,7 @@ class PlanarVizNode(Node):
             width=self.get_parameter("image_width").value,
             height=self.get_parameter("image_height").value,
             num_points=25,
-            inverted_coordinates=True,
+            inverted_coordinates=self.get_parameter("invert_coordinates"),
             invert_colors=self.get_parameter("invert_colors"),
         )
         if self.open_cv2_window:
