@@ -12,6 +12,8 @@ from rclpy.node import Node
 from pathlib import Path
 
 from example_interfaces.msg import Float64MultiArray
+from geometry_msgs.msg import Pose2D
+from hsa_control_interfaces.msg import Pose2DStamped
 from mocap_optitrack_interfaces.msg import PlanarCsConfiguration
 
 import jsrm
@@ -31,10 +33,10 @@ class PlanarSimNode(Node):
         )
         # call factory for the planar HSA kinematics and dynamics
         (
-            _,
-            _,
-            _,
-            _,
+            forward_kinematics_virtual_backbone_fn,
+            forward_kinematics_end_effector_fn,
+            jacobian_end_effector_fn,
+            inverse_kinematics_end_effector_fn,
             dynamical_matrices_fn,
             sys_helpers,
         ) = planar_hsa.factory(sym_exp_filepath)
@@ -67,6 +69,10 @@ class PlanarSimNode(Node):
         # actual rest strain
         self.xi_eq = sys_helpers["rest_strains_fn"](self.params)  # rest strains
 
+        # initialize forward kinematic functions
+        self.forward_kinematics_end_effector_fn = jit(partial(forward_kinematics_end_effector_fn, self.params))
+        self.jacobian_end_effector_fn = jit(partial(jacobian_end_effector_fn, self.params))
+
         # initialize state and control input
         self.q = jnp.zeros_like(self.xi_eq)  # generalized coordinates
         self.n_q = self.q.shape[0]  # number of generalized coordinates
@@ -76,7 +82,7 @@ class PlanarSimNode(Node):
         # initialize ODE solver
         self.declare_parameter("sim_dt", 1e-4)
         self.sim_dt = jnp.array(self.get_parameter("sim_dt").value)
-        self.declare_parameter("control_frequency", 50)
+        self.declare_parameter("control_frequency", 100)
         self.control_frequency = self.get_parameter("control_frequency").value
         self.control_dt = 1 / self.control_frequency
 
@@ -135,8 +141,20 @@ class PlanarSimNode(Node):
         )
         self.declare_parameter("configuration_velocity_topic", "configuration_velocity")
         self.configuration_velocity_pub = self.create_publisher(
-            Float64MultiArray,
+            PlanarCsConfiguration,
             self.get_parameter("configuration_velocity_topic").value,
+            10,
+        )
+
+        # create a publisher for the end-effector pose and its velocity
+        self.declare_parameter("end_effector_pose_topic", "end_effector_pose")
+        self.end_effector_pose_pub = self.create_publisher(
+            Pose2DStamped, self.get_parameter("end_effector_pose_topic").value, 10
+        )
+        self.declare_parameter("end_effector_velocity_topic", "end_effector_velocity")
+        self.end_effector_velocity_pub = self.create_publisher(
+            Pose2DStamped,
+            self.get_parameter("end_effector_velocity_topic").value,
             10,
         )
 
@@ -175,6 +193,12 @@ class PlanarSimNode(Node):
         # update the state of the system
         self.q, self.q_d = x1[: self.n_q], x1[self.n_q :]
 
+        # compute the end-effector pose
+        chiee = self.forward_kinematics_end_effector_fn(self.q)
+        # compute the end-effector velocity
+        Jee = self.jacobian_end_effector_fn(self.q)
+        chiee_d = Jee @ self.q_d
+
         # publish the configuration
         configuration_msg = PlanarCsConfiguration(
             kappa_b=self.q[0].item(),
@@ -185,8 +209,31 @@ class PlanarSimNode(Node):
         self.configuration_pub.publish(configuration_msg)
 
         # publish configuration velocity
-        configuration_velocity_msg = Float64MultiArray(data=self.q_d.tolist())
+        configuration_velocity_msg = PlanarCsConfiguration(
+            kappa_b=self.q_d[0].item(),
+            sigma_sh=self.q_d[1].item(),
+            sigma_a=self.q_d[2].item(),
+        )
+        configuration_velocity_msg.header.stamp = clock_current_time_obj.to_msg()
         self.configuration_velocity_pub.publish(configuration_velocity_msg)
+
+        # publish the end-effector pose
+        end_effector_pose_msg = Pose2DStamped(pose=Pose2D(
+            x=chiee[0].item(),
+            y=chiee[1].item(),
+            theta=chiee[2].item(),
+        ))
+        end_effector_pose_msg.header.stamp = clock_current_time_obj.to_msg()
+        self.end_effector_pose_pub.publish(end_effector_pose_msg)
+
+        # publish the end-effector velocity
+        end_effector_velocity_msg = Pose2DStamped(pose=Pose2D(
+            x=chiee_d[0].item(),
+            y=chiee_d[1].item(),
+            theta=chiee_d[2].item(),
+        ))
+        end_effector_velocity_msg.header.stamp = clock_current_time_obj.to_msg()
+        self.end_effector_velocity_pub.publish(end_effector_velocity_msg)
 
         # update the clock time
         self.clock_time = clock_current_time
