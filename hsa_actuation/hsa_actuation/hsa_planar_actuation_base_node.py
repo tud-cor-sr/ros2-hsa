@@ -1,5 +1,6 @@
 from jax import Array
 import jax.numpy as jnp
+from jsrm.parameters.hsa_params import PARAMS_FPU_CONTROL, PARAMS_EPU_CONTROL
 import numpy as np
 import rclpy
 
@@ -10,7 +11,18 @@ class HsaPlanarActuationBaseNode(HsaActuationBaseNode):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.control_handedness = jnp.array([1.0, 1.0])
+        self.declare_parameter("hsa_material", "fpu")
+        hsa_material = self.get_parameter("hsa_material").value
+        if hsa_material == "fpu":
+            self.params = PARAMS_FPU_CONTROL.copy()
+        elif hsa_material == "epu":
+            self.params = PARAMS_EPU_CONTROL.copy()
+        else:
+            raise ValueError(f"Unknown HSA material: {hsa_material}")
+
+        self.control_handedness = self.params["h"][
+            0
+        ]  # handedness of rods in first segment in control model
 
     def map_motor_angles_to_actuation_coordinates(self, motor_angles: Array) -> Array:
         """
