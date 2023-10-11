@@ -39,6 +39,9 @@ class PlanarHsaVelocityEstimatorNode(Node):
             10
         )
 
+        # initialize configuration and end-effector pose velocities
+        self.q_d, self.chiee_d = None, None
+
         # history of configurations
         # the longer the history, the more delays we introduce, but the less noise we get
         self.declare_parameter("history_length_for_diff", 16)
@@ -46,6 +49,7 @@ class PlanarHsaVelocityEstimatorNode(Node):
         self.tchiee_hs = jnp.zeros(
             (self.get_parameter("history_length_for_diff").value,)
         )
+        self.q_hs, self.chiee_hs = None, None
 
         # method for computing derivative
         self.diff_method = derivative.Spline(s=1.0, k=3)
@@ -61,6 +65,9 @@ class PlanarHsaVelocityEstimatorNode(Node):
 
         # set the current configuration
         q = jnp.array([msg.kappa_b, msg.sigma_sh, msg.sigma_a])
+
+        if self.q_d is None:
+            self.q_d = jnp.zeros_like(q)
 
         if self.q_hs is None:
             self.q_hs = jnp.zeros(
@@ -78,6 +85,9 @@ class PlanarHsaVelocityEstimatorNode(Node):
 
         # set the current end-effector pose
         chiee = jnp.array([msg.pose.x, msg.pose.y, msg.pose.theta])
+
+        if self.chiee_d is None:
+            self.chiee_d = jnp.zeros_like(chiee)
 
         if self.chiee_hs is None:
             self.chiee_hs = jnp.zeros(
@@ -99,7 +109,7 @@ class PlanarHsaVelocityEstimatorNode(Node):
         """
         # if the buffer is not full yet, return the current velocity
         if jnp.any(self.tq_hs == 0.0):
-            return self.q_d
+            return 0.0, self.q_d
 
         # subtract the first time stamp from all time stamps to avoid numerical issues
         t_hs = self.tq_hs - self.tq_hs[0]
@@ -123,7 +133,7 @@ class PlanarHsaVelocityEstimatorNode(Node):
         """
         # if the buffer is not full yet, return the current velocity
         if jnp.any(self.tchiee_hs == 0.0):
-            return self.chiee_d
+            return 0.0, self.chiee_d
 
         # subtract the first time stamp from all time stamps to avoid numerical issues
         tchiee_hs = self.tchiee_hs - self.tchiee_hs[0]
@@ -139,23 +149,27 @@ class PlanarHsaVelocityEstimatorNode(Node):
         return self.tchiee_hs[-1], chiee_d
     
     def timer_callback(self):
-        tq, q_d = self.compute_q_d()
-        tchiee, chiee_d = self.compute_chiee_d()
+        tq, self.q_d = self.compute_q_d()
+        tchiee, self.chiee_d = self.compute_chiee_d()
+
+        # if there is no data available, do not publish anything
+        if self.q_d is None or self.chiee_d is None:
+            return
 
         # publish the velocity of the generalized coordinates
         msg = PlanarCsConfiguration()
         msg.header.stamp = Time(seconds=tq).to_msg()
-        msg.kappa_b = q_d[0].item()
-        msg.sigma_sh = q_d[1].item()
-        msg.sigma_a = q_d[2].item()
+        msg.kappa_b = self.q_d[0].item()
+        msg.sigma_sh = self.q_d[1].item()
+        msg.sigma_a = self.q_d[2].item()
         self.q_d_pub.publish(msg)
 
         # publish the velocity of the end-effector pose
         msg = Pose2DStamped()
         msg.header.stamp = Time(seconds=tchiee).to_msg()
-        msg.pose.x = chiee_d[0].item()
-        msg.pose.y = chiee_d[1].item()
-        msg.pose.theta = chiee_d[2].item()
+        msg.pose.x = self.chiee_d[0].item()
+        msg.pose.y = self.chiee_d[1].item()
+        msg.pose.theta = self.chiee_d[2].item()
         self.chiee_d_pub.publish(msg)
 
 def main(args=None):
