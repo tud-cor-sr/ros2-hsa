@@ -12,6 +12,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.time import Time
 from pathlib import Path
+from typing import Tuple
 
 from geometry_msgs.msg import Pose2D
 from hsa_control_interfaces.msg import (
@@ -24,6 +25,20 @@ class PlanarHsaVelocityEstimatorNode(Node):
     def __init__(self):
         super().__init__("planar_hsa_velocity_estimator_node")
 
+        # initialize velocity publishers
+        self.declare_parameter("configuration_velocity_topic", "configuration_velocity")
+        self.q_d_pub = self.create_publisher(
+            PlanarCsConfiguration,
+            self.get_parameter("configuration_velocity_topic").value,
+            10
+        )
+        self.declare_parameter("end_effector_velocity_topic", "end_effector_velocity")
+        self.chiee_d_pub = self.create_publisher(
+            Pose2DStamped,
+            self.get_parameter("end_effector_velocity_topic").value,
+            10
+        )
+
         # history of configurations
         # the longer the history, the more delays we introduce, but the less noise we get
         self.declare_parameter("history_length_for_diff", 16)
@@ -34,6 +49,12 @@ class PlanarHsaVelocityEstimatorNode(Node):
 
         # method for computing derivative
         self.diff_method = derivative.Spline(s=1.0, k=3)
+
+        # timer for publishing the velocity messages
+        self.declare_parameter("frequency", 200.0)
+        self.create_timer(
+            1.0 / self.get_parameter("frequency").value, self.timer_callback
+        )
 
     def configuration_listener_callback(self, msg: PlanarCsConfiguration):
         t = Time.from_msg(msg.header.stamp).nanoseconds / 1e9
@@ -69,9 +90,12 @@ class PlanarHsaVelocityEstimatorNode(Node):
         self.chiee_hs = jnp.roll(self.chiee_hs, shift=-1, axis=0)
         self.chiee_hs = self.chiee_hs.at[-1].set(chiee)
 
-    def compute_q_d(self) -> Array:
+    def compute_q_d(self) -> Tuple[float, Array]:
         """
         Compute the velocity of the generalized coordinates from the history of configurations.
+        Returns:
+            t: the time of the last configuration measurement
+            q_d: velocity of the generalized coordinates
         """
         # if the buffer is not full yet, return the current velocity
         if jnp.any(self.tq_hs == 0.0):
@@ -88,11 +112,14 @@ class PlanarHsaVelocityEstimatorNode(Node):
 
             q_d = q_d.at[i].set(q_d_hs[-1])
 
-        return q_d
+        return self.tq_hs[-1], q_d
 
-    def compute_chiee_d(self) -> Array:
+    def compute_chiee_d(self) -> Tuple[float, Array]:
         """
         Compute the velocity of the end-effector pose from the history of end-effector poses.
+        Returns:
+            t: the time of the last configuration measurement
+            chiee_d: velocity of the end-effector pose
         """
         # if the buffer is not full yet, return the current velocity
         if jnp.any(self.tchiee_hs == 0.0):
@@ -109,8 +136,27 @@ class PlanarHsaVelocityEstimatorNode(Node):
 
             chiee_d = chiee_d.at[i].set(chiee_d_hs[-1])
 
-        return chiee_d
+        return self.tchiee_hs[-1], chiee_d
+    
+    def timer_callback(self):
+        tq, q_d = self.compute_q_d()
+        tchiee, chiee_d = self.compute_chiee_d()
 
+        # publish the velocity of the generalized coordinates
+        msg = PlanarCsConfiguration()
+        msg.header.stamp = Time(seconds=tq).to_msg()
+        msg.kappa_b = q_d[0].item()
+        msg.sigma_sh = q_d[1].item()
+        msg.sigma_a = q_d[2].item()
+        self.q_d_pub.publish(msg)
+
+        # publish the velocity of the end-effector pose
+        msg = Pose2DStamped()
+        msg.header.stamp = Time(seconds=tchiee).to_msg()
+        msg.pose.x = chiee_d[0].item()
+        msg.pose.y = chiee_d[1].item()
+        msg.pose.theta = chiee_d[2].item()
+        self.chiee_d_pub.publish(msg)
 
 def main(args=None):
     # Start node, and spin
