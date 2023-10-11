@@ -54,6 +54,23 @@ class PlanarHsaVelocityEstimatorNode(Node):
         # method for computing derivative
         self.diff_method = derivative.Spline(s=1.0, k=3)
 
+        # initialize listeners for configuration and end-effector pose
+        self.declare_parameter("configuration_topic", "configuration")
+        self.configuration_sub = self.create_subscription(
+            PlanarCsConfiguration,
+            self.get_parameter("configuration_topic").value,
+            self.configuration_listener_callback,
+            10,
+        )
+
+        self.declare_parameter("end_effector_pose_topic", "end_effector_pose")
+        self.end_effector_pose_sub = self.create_subscription(
+            Pose2DStamped,
+            self.get_parameter("end_effector_pose_topic").value,
+            self.end_effector_pose_listener_callback,
+            10,
+        )
+
         # timer for publishing the velocity messages
         self.declare_parameter("frequency", 200.0)
         self.create_timer(
@@ -114,7 +131,7 @@ class PlanarHsaVelocityEstimatorNode(Node):
         # subtract the first time stamp from all time stamps to avoid numerical issues
         t_hs = self.tq_hs - self.tq_hs[0]
 
-        q_d = jnp.zeros_like(self.q)
+        q_d = jnp.zeros_like(self.q_d)
         # iterate through configuration variables
         for i in range(self.q_hs.shape[-1]):
             # derivative of all time stamps for configuration variable i
@@ -138,7 +155,7 @@ class PlanarHsaVelocityEstimatorNode(Node):
         # subtract the first time stamp from all time stamps to avoid numerical issues
         tchiee_hs = self.tchiee_hs - self.tchiee_hs[0]
 
-        chiee_d = jnp.zeros_like(self.chiee)
+        chiee_d = jnp.zeros_like(self.chiee_d)
         # iterate through configuration variables
         for i in range(self.chiee_hs.shape[-1]):
             # derivative of all time stamps for configuration variable i
