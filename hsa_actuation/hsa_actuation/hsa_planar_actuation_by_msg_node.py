@@ -12,7 +12,7 @@ class HsaPlanarActuationByMsgNode(HsaPlanarActuationBaseNode):
     def __init__(self):
         super().__init__(
             node_name="hsa_planar_actuation_by_msg_node",
-            post_present_motor_angles_receival_callback=self.map_motor_angles_to_actuation_coordinates
+            post_present_motor_angles_receival_callback=self.present_motor_angles_callback
         )
 
         # create the publisher of the current actuation
