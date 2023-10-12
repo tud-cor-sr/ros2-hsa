@@ -57,7 +57,7 @@ class PlanarHsaVelocityEstimatorNode(Node):
         self.lhs4d = 4  # History length for numerical differentiation
         if self.num_derivative_method == "numpy_gradient":
             self.lhs4d = 4
-            self.num_derivative_fn = partial(jnp.gradient, axis=0)
+            self.num_derivative_fn = jit(partial(jnp.gradient, axis=0))
         elif self.num_derivative_method == "derivative_savitzky_golay":
             self.lhs4d = 60
             self.num_derivative_fn = derivative.SavitzkyGolay(left=0.1, right=0.1, order=3).d
