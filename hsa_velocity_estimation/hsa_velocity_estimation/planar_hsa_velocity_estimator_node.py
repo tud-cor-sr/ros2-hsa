@@ -104,9 +104,7 @@ class PlanarHsaVelocityEstimatorNode(Node):
             self.q_d = jnp.zeros_like(q)
 
         if self.q_hs is None:
-            self.q_hs = jnp.zeros(
-                (self.get_parameter("history_length_for_diff").value, q.shape[0])
-            )
+            self.q_hs = jnp.zeros((self.lhs4d, q.shape[0]))
 
         # update history
         self.tq_hs = update_history_array(self.tq_hs, t)
@@ -122,9 +120,7 @@ class PlanarHsaVelocityEstimatorNode(Node):
             self.chiee_d = jnp.zeros_like(chiee)
 
         if self.chiee_hs is None:
-            self.chiee_hs = jnp.zeros(
-                (self.get_parameter("history_length_for_diff").value, chiee.shape[0])
-            )
+            self.chiee_hs = jnp.zeros((self.lhs4d, chiee.shape[0]))
 
         # update history
         self.tchiee_hs = update_history_array(self.tchiee_hs, t)
