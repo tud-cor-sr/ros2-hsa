@@ -21,6 +21,14 @@ from hsa_control_interfaces.msg import (
 from mocap_optitrack_interfaces.msg import PlanarCsConfiguration
 
 
+@jit
+def update_history_array(x_hs: Array, x: Array) -> Array:
+    # x_hs = jnp.roll(x_hs, shift=-1, axis=0)
+    # x_ts = x_hs.at[-1].set(x)  # this operation seems to be slow
+    x_ts = jnp.concatenate((x_hs[1:], jnp.expand_dims(x, axis=0)), axis=0)
+    return x_ts
+
+
 class PlanarHsaVelocityEstimatorNode(Node):
     def __init__(self):
         super().__init__("planar_hsa_velocity_estimator_node")
@@ -101,10 +109,8 @@ class PlanarHsaVelocityEstimatorNode(Node):
             )
 
         # update history
-        self.tq_hs = jnp.roll(self.tq_hs, shift=-1, axis=0)
-        self.tq_hs = self.tq_hs.at[-1].set(t)
-        self.q_hs = jnp.roll(self.q_hs, shift=-1, axis=0)
-        self.q_hs = self.q_hs.at[-1].set(q)
+        self.tq_hs = update_history_array(self.tq_hs, t)
+        self.q_hs = update_history_array(self.q_hs, q)
 
     def end_effector_pose_listener_callback(self, msg: Pose2DStamped):
         t = Time.from_msg(msg.header.stamp).nanoseconds / 1e9
@@ -121,10 +127,8 @@ class PlanarHsaVelocityEstimatorNode(Node):
             )
 
         # update history
-        self.tchiee_hs = jnp.roll(self.tchiee_hs, shift=-1, axis=0)
-        self.tchiee_hs = self.tchiee_hs.at[-1].set(t)
-        self.chiee_hs = jnp.roll(self.chiee_hs, shift=-1, axis=0)
-        self.chiee_hs = self.chiee_hs.at[-1].set(chiee)
+        self.tchiee_hs = update_history_array(self.tchiee_hs, t)
+        self.chiee_hs = update_history_array(self.chiee_hs, chiee)
 
     def compute_q_d(self) -> Tuple[float, Array]:
         """
