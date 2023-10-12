@@ -52,7 +52,7 @@ class HsaActuationBaseNode(Node):
             10,
         )
 
-        self.declare_parameter("present_motor_angles_frequency", 200.0)
+        self.declare_parameter("present_motor_angles_frequency", 100.0)
         self.present_motor_angles_frequency = self.get_parameter(
             "present_motor_angles_frequency"
         ).value
