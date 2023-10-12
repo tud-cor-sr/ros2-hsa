@@ -11,7 +11,7 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
     ],
-    install_requires=['setuptools'],
+    install_requires=['derivative', 'jax', 'numderivax', 'setuptools'],
     zip_safe=True,
     maintainer='Maximilian Stoelzle',
     maintainer_email='maximilian@stoelzle.ch',
