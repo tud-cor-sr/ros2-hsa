@@ -44,7 +44,7 @@ class PlanarHsaVelocityEstimatorNode(Node):
 
         # history of configurations
         # the longer the history, the more delays we introduce, but the less noise we get
-        self.declare_parameter("history_length_for_diff", 16)
+        self.declare_parameter("history_length_for_diff", 8)
         self.tq_hs = jnp.zeros((self.get_parameter("history_length_for_diff").value,))
         self.tchiee_hs = jnp.zeros(
             (self.get_parameter("history_length_for_diff").value,)
@@ -52,7 +52,16 @@ class PlanarHsaVelocityEstimatorNode(Node):
         self.q_hs, self.chiee_hs = None, None
 
         # method for computing derivative
-        self.diff_method = derivative.Spline(s=1.0, k=3)
+        self.declare_parameter("num_derivative_method", "numpy_gradient")
+        self.num_derivative_method = self.get_parameter("num_derivative_method").value
+        if self.num_derivative_method == "numpy_gradient":
+            self.num_derivative_fn = partial(jnp.gradient, axis=0)
+        elif self.num_derivative_method == "derivative_savitzky_golay":
+            self.num_derivative_fn = derivative.SavitzkyGolay(left=2, right=2, order=3).d
+        elif self.num_derivative_method == "derivative_spline":
+            self.num_derivative_fn = derivative.Spline(s=1.0, order=3).d
+        else:
+            raise ValueError(f"Unknown num_derivative_method: {self.num_derivative_method}")
 
         # initialize listeners for configuration and end-effector pose
         self.declare_parameter("configuration_topic", "configuration")
@@ -129,15 +138,23 @@ class PlanarHsaVelocityEstimatorNode(Node):
             return 0.0, self.q_d
 
         # subtract the first time stamp from all time stamps to avoid numerical issues
-        t_hs = self.tq_hs - self.tq_hs[0]
+        t_hs = jnp.repeat(jnp.expand_dims(self.tq_hs - self.tq_hs[0], axis=-1), self.q_hs.shape[-1], axis=-1)
 
-        q_d = jnp.zeros_like(self.q_d)
-        # iterate through configuration variables
-        for i in range(self.q_hs.shape[-1]):
-            # derivative of all time stamps for configuration variable i
-            q_d_hs = self.diff_method.d(self.q_hs[:, i], t_hs)
+        if self.num_derivative_method == "numpy_gradient":
+            # we assume a constant time step
+            dt = jnp.mean(t_hs[1:] - t_hs[:-1])
+            q_d_hs = self.num_derivative_fn(self.q_hs, dt)
+        elif self.num_derivative_method in ["derivative_finite_differences", "derivative_savitzky_golay", "derivative_spline"]:
+            # iterate through configuration variables
+            q_d_hs = []
+            for i in range(self.q_hs.shape[-1]):
+                # derivative of all time stamps for configuration variable i
+                q_d_hs.append(self.num_derivative_fn(self.q_hs[:, i], t_hs[:, i]))
+            q_d_hs = jnp.stack(q_d_hs, axis=0)
+        else:
+            q_d_hs = self.num_derivative_fn(self.q_hs, t_hs)
 
-            q_d = q_d.at[i].set(q_d_hs[-1])
+        q_d = q_d_hs[-1]
 
         return self.tq_hs[-1], q_d
 
@@ -153,15 +170,23 @@ class PlanarHsaVelocityEstimatorNode(Node):
             return 0.0, self.chiee_d
 
         # subtract the first time stamp from all time stamps to avoid numerical issues
-        tchiee_hs = self.tchiee_hs - self.tchiee_hs[0]
+        t_hs = jnp.repeat(jnp.expand_dims(self.tchiee_hs - self.tchiee_hs[0], axis=-1), self.chiee_hs.shape[-1], axis=-1)
 
-        chiee_d = jnp.zeros_like(self.chiee_d)
-        # iterate through configuration variables
-        for i in range(self.chiee_hs.shape[-1]):
-            # derivative of all time stamps for configuration variable i
-            chiee_d_hs = self.diff_method.d(self.chiee_hs[:, i], tchiee_hs)
+        if self.num_derivative_method == "numpy_gradient":
+            # we assume a constant time step
+            dt = jnp.mean(t_hs[1:] - t_hs[:-1])
+            chiee_d_hs = self.num_derivative_fn(self.chiee_hs, dt)
+        elif self.num_derivative_method in ["derivative_finite_differences", "derivative_savitzky_golay", "derivative_spline"]:
+            # iterate through configuration variables
+            chiee_d_hs = []
+            for i in range(self.chiee_hs.shape[-1]):
+                # derivative of all time stamps for configuration variable i
+                chiee_d_hs.append(self.num_derivative_fn(self.chiee_hs[:, i], t_hs[:, i]))
+            chiee_d_hs = jnp.stack(chiee_d_hs, axis=0)
+        else:
+            chiee_d_hs = self.num_derivative_fn(self.chiee_hs, t_hs)
 
-            chiee_d = chiee_d.at[i].set(chiee_d_hs[-1])
+        chiee_d = chiee_d_hs[-1]
 
         return self.tchiee_hs[-1], chiee_d
     
