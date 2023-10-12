@@ -6,8 +6,9 @@ from jax import config as jax_config
 jax_config.update("jax_enable_x64", True)  # double precision
 jax_config.update("jax_platform_name", "cpu")  # use CPU
 import jax
-from jax import Array, jit
+from jax import Array, jit, vmap
 from jax import numpy as jnp
+import numderivax
 import rclpy
 from rclpy.node import Node
 from rclpy.time import Time
@@ -71,6 +72,21 @@ class PlanarHsaVelocityEstimatorNode(Node):
             self.num_derivative_fn = partial(
                 derivative.Spline(s=1.0, order=3).compute,
                 i=-1
+            )
+        elif self.num_derivative_method == "numderivax_savitzky_golay":
+            self.lhs4d = 25
+            self.num_derivative_fn = jit(
+                vmap(
+                    partial(
+                        numderivax.savitzky_golay_derivative_single_sample,
+                        sample_idx=-1,
+                        num_left=self.lhs4d - 1,
+                        num_right=0,
+                        order=3,
+                    ),
+                    in_axes=-1,  # mapping over the state dimension
+                    out_axes=-1,  # mapping over the state dimension
+                )
             )
         else:
             raise ValueError(f"Unknown num_derivative_method: {self.num_derivative_method}")
@@ -193,8 +209,7 @@ class PlanarHsaVelocityEstimatorNode(Node):
                 chiee_d.append(self.num_derivative_fn(self.chiee_hs[:, chiee_idx], t_hs[:, chiee_idx]))
             chiee_d = jnp.stack(chiee_d, axis=0)
         else:
-            chiee_d_hs = self.num_derivative_fn(self.chiee_hs, t_hs)
-            chiee_d = chiee_d_hs[-1]
+            chiee_d = self.num_derivative_fn(self.chiee_hs, t_hs)
 
         return self.tchiee_hs[-1], chiee_d
     
