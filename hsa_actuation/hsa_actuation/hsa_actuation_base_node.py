@@ -2,6 +2,7 @@ from functools import partial, reduce
 import numpy as np
 import rclpy
 from rclpy.node import Node
+from typing import Callable
 
 from example_interfaces.msg import Float64MultiArray
 from dynamixel_control_custom_interfaces.msg import SetPosition
@@ -9,7 +10,7 @@ from dynamixel_control_custom_interfaces.srv import GetPositions
 
 
 class HsaActuationBaseNode(Node):
-    def __init__(self, node_name: str, post_present_motor_angles_receival_callback: Callback = None):
+    def __init__(self, node_name: str, post_present_motor_angles_receival_callback: Callable = None):
         super().__init__(node_name)
 
         self.declare_parameter("get_motor_positions_service_name", "/get_positions")
