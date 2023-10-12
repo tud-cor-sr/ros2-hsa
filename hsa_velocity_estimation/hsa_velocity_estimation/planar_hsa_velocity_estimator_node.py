@@ -59,11 +59,19 @@ class PlanarHsaVelocityEstimatorNode(Node):
             self.lhs4d = 4
             self.num_derivative_fn = jit(partial(jnp.gradient, axis=0))
         elif self.num_derivative_method == "derivative_savitzky_golay":
-            self.lhs4d = 60
-            self.num_derivative_fn = derivative.SavitzkyGolay(left=0.1, right=0.1, order=3).d
+            self.lhs4d = 30
+            # we are only interested in the last (i.e., most recent) derivative
+            self.num_derivative_fn = partial(
+                derivative.SavitzkyGolay(left=0.1, right=0.0, order=3).compute,
+                i=-1
+            )
         elif self.num_derivative_method == "derivative_spline":
             self.lhs4d = 16
-            self.num_derivative_fn = derivative.Spline(s=1.0, order=3).d
+            # we are only interested in the last (i.e., most recent) derivative
+            self.num_derivative_fn = partial(
+                derivative.Spline(s=1.0, order=3).compute,
+                i=-1
+            )
         else:
             raise ValueError(f"Unknown num_derivative_method: {self.num_derivative_method}")
         
@@ -176,17 +184,17 @@ class PlanarHsaVelocityEstimatorNode(Node):
             # we assume a constant time step
             dt = jnp.mean(t_hs[1:] - t_hs[:-1])
             chiee_d_hs = self.num_derivative_fn(self.chiee_hs, dt)
+            chiee_d = chiee_d_hs[-1]
         elif self.num_derivative_method in ["derivative_finite_differences", "derivative_savitzky_golay", "derivative_spline"]:
             # iterate through configuration variables
-            chiee_d_hs = []
-            for i in range(self.chiee_hs.shape[-1]):
-                # derivative of all time stamps for configuration variable i
-                chiee_d_hs.append(self.num_derivative_fn(self.chiee_hs[:, i], t_hs[:, i]))
-            chiee_d_hs = jnp.stack(chiee_d_hs, axis=0)
+            chiee_d = []
+            for chiee_idx in range(self.chiee_hs.shape[-1]):
+                # derivative for the last (i.e., most recent) time step
+                chiee_d.append(self.num_derivative_fn(self.chiee_hs[:, chiee_idx], t_hs[:, chiee_idx]))
+            chiee_d = jnp.stack(chiee_d, axis=0)
         else:
             chiee_d_hs = self.num_derivative_fn(self.chiee_hs, t_hs)
-
-        chiee_d = chiee_d_hs[-1]
+            chiee_d = chiee_d_hs[-1]
 
         return self.tchiee_hs[-1], chiee_d
     
