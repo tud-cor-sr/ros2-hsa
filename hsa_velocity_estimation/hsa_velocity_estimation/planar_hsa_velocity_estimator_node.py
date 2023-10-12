@@ -152,17 +152,17 @@ class PlanarHsaVelocityEstimatorNode(Node):
             # we assume a constant time step
             dt = jnp.mean(t_hs[1:] - t_hs[:-1])
             q_d_hs = self.num_derivative_fn(self.q_hs, dt)
+            q_d = q_d_hs[-1]
         elif self.num_derivative_method in ["derivative_finite_differences", "derivative_savitzky_golay", "derivative_spline"]:
             # iterate through configuration variables
-            q_d_hs = []
-            for i in range(self.q_hs.shape[-1]):
-                # derivative of all time stamps for configuration variable i
-                q_d_hs.append(self.num_derivative_fn(self.q_hs[:, i], t_hs[:, i]))
-            q_d_hs = jnp.stack(q_d_hs, axis=0)
+            q_d = []
+            for q_idx in range(self.q_hs.shape[-1]):
+                # derivative for the last (i.e., most recent) time step
+                q_d.append(self.num_derivative_fn(self.q_hs[:, q_idx], t_hs[:, q_idx]))
+            q_d = jnp.stack(q_d, axis=0)
         else:
             q_d_hs = self.num_derivative_fn(self.q_hs, t_hs)
-
-        q_d = q_d_hs[-1]
+            q_d = q_d_hs[-1]
 
         return self.tq_hs[-1], q_d
 
