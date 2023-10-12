@@ -42,26 +42,26 @@ class PlanarHsaVelocityEstimatorNode(Node):
         # initialize configuration and end-effector pose velocities
         self.q_d, self.chiee_d = None, None
 
-        # history of configurations
-        # the longer the history, the more delays we introduce, but the less noise we get
-        self.declare_parameter("history_length_for_diff", 8)
-        self.tq_hs = jnp.zeros((self.get_parameter("history_length_for_diff").value,))
-        self.tchiee_hs = jnp.zeros(
-            (self.get_parameter("history_length_for_diff").value,)
-        )
-        self.q_hs, self.chiee_hs = None, None
-
         # method for computing derivative
         self.declare_parameter("num_derivative_method", "numpy_gradient")
         self.num_derivative_method = self.get_parameter("num_derivative_method").value
+
+        self.lhs4d = 4  # History length for numerical differentiation
         if self.num_derivative_method == "numpy_gradient":
+            self.lhs4d = 4
             self.num_derivative_fn = partial(jnp.gradient, axis=0)
         elif self.num_derivative_method == "derivative_savitzky_golay":
-            self.num_derivative_fn = derivative.SavitzkyGolay(left=2, right=2, order=3).d
+            self.lhs4d = 60
+            self.num_derivative_fn = derivative.SavitzkyGolay(left=0.1, right=0.1, order=3).d
         elif self.num_derivative_method == "derivative_spline":
+            self.lhs4d = 16
             self.num_derivative_fn = derivative.Spline(s=1.0, order=3).d
         else:
             raise ValueError(f"Unknown num_derivative_method: {self.num_derivative_method}")
+        
+        self.tq_hs = jnp.zeros((self.lhs4d,))
+        self.tchiee_hs = jnp.zeros((self.lhs4d,))
+        self.q_hs, self.chiee_hs = None, None
 
         # initialize listeners for configuration and end-effector pose
         self.declare_parameter("configuration_topic", "configuration")
