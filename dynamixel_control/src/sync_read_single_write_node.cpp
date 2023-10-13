@@ -56,7 +56,7 @@
 
 // Default setting
 // #define BAUDRATE 57600  // Default Baudrate of DYNAMIXEL X series
-#define BAUDRATE 2e6  // 2 megabytes per second
+#define BAUDRATE 4e6  // 4 megabytes per second
 #define DEVICE_NAME "/dev/ttyUSB0"  // [Linux]: "/dev/ttyUSB*", [Windows]: "COM*"
 
 dynamixel::PortHandler * portHandler;
