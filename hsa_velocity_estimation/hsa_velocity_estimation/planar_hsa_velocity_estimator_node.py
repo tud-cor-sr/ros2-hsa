@@ -99,8 +99,8 @@ class PlanarHsaVelocityEstimatorNode(Node):
                         num_right=0,
                         order=3,
                     ),
-                    in_axes=-1,  # mapping over the state dimension
-                    out_axes=-1,  # mapping over the state dimension
+                    in_axes=1,  # mapping over the state dimension
+                    out_axes=0,  # mapping over the state dimension
                 )
             )
         else:
