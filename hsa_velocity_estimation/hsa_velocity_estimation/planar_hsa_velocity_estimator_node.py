@@ -13,6 +13,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.time import Time
 from pathlib import Path
+from scipy.signal import savgol_filter
 from typing import Tuple
 
 from geometry_msgs.msg import Pose2D
@@ -58,7 +59,21 @@ class PlanarHsaVelocityEstimatorNode(Node):
         self.lhs4d = 4  # History length for numerical differentiation
         if self.num_derivative_method == "numpy_gradient":
             self.lhs4d = 4
-            self.num_derivative_fn = jit(partial(jnp.gradient, axis=0))
+            self.num_derivative_fn = jit(
+                # we assume a constant sampling rate
+                lambda _x_hs, _t_hs: jnp.gradient(_x_hs, jnp.mean(_t_hs[1:] - _t_hs[:-1]), axis=0)
+            )
+        elif self.num_derivative_method == "scipy_savgol_filter":
+            self.lhs4d = 6
+            self.num_derivative_fn = lambda _x_hs, _t_hs: savgol_filter(
+                _x_hs,
+                window_length=self.lhs4d - 1,
+                polyorder=3,
+                deriv=1,
+                # we assume a constant sampling rate
+                delta=jnp.mean(_t_hs[1:] - _t_hs[:-1]),
+                axis=0,
+            )
         elif self.num_derivative_method == "derivative_savitzky_golay":
             self.lhs4d = 20
             # we are only interested in the last (i.e., most recent) derivative
@@ -164,10 +179,8 @@ class PlanarHsaVelocityEstimatorNode(Node):
         # subtract the first time stamp from all time stamps to avoid numerical issues
         t_hs = jnp.repeat(jnp.expand_dims(self.tq_hs - self.tq_hs[0], axis=-1), self.q_hs.shape[-1], axis=-1)
 
-        if self.num_derivative_method == "numpy_gradient":
-            # we assume a constant time step
-            dt = jnp.mean(t_hs[1:] - t_hs[:-1])
-            q_d_hs = self.num_derivative_fn(self.q_hs, dt)
+        if self.num_derivative_method in ["numpy_gradient", "scipy_savgol_filter"]:
+            q_d_hs = self.num_derivative_fn(self.q_hs, t_hs)
             q_d = q_d_hs[-1]
         elif self.num_derivative_method in ["derivative_finite_differences", "derivative_savitzky_golay", "derivative_spline"]:
             # iterate through configuration variables
@@ -195,10 +208,8 @@ class PlanarHsaVelocityEstimatorNode(Node):
         # subtract the first time stamp from all time stamps to avoid numerical issues
         t_hs = jnp.repeat(jnp.expand_dims(self.tchiee_hs - self.tchiee_hs[0], axis=-1), self.chiee_hs.shape[-1], axis=-1)
 
-        if self.num_derivative_method == "numpy_gradient":
-            # we assume a constant time step
-            dt = jnp.mean(t_hs[1:] - t_hs[:-1])
-            chiee_d_hs = self.num_derivative_fn(self.chiee_hs, dt)
+        if self.num_derivative_method in ["numpy_gradient", "scipy_savgol_filter"]:
+            chiee_d_hs = self.num_derivative_fn(self.chiee_hs, t_hs)
             chiee_d = chiee_d_hs[-1]
         elif self.num_derivative_method in ["derivative_finite_differences", "derivative_savitzky_golay", "derivative_spline"]:
             # iterate through configuration variables
