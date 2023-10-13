@@ -53,7 +53,7 @@ class PlanarHsaVelocityEstimatorNode(Node):
         self.q_d, self.chiee_d = None, None
 
         # method for computing derivative
-        self.declare_parameter("num_derivative_method", "numpy_gradient")
+        self.declare_parameter("num_derivative_method", "scipy_savgol_filter")
         self.num_derivative_method = self.get_parameter("num_derivative_method").value
 
         self.lhs4d = 4  # History length for numerical differentiation
@@ -64,7 +64,7 @@ class PlanarHsaVelocityEstimatorNode(Node):
                 lambda _x_hs, _t_hs: jnp.gradient(_x_hs, jnp.mean(_t_hs[1:] - _t_hs[:-1]), axis=0)
             )
         elif self.num_derivative_method == "scipy_savgol_filter":
-            self.lhs4d = 6
+            self.lhs4d = 21
             self.num_derivative_fn = lambda _x_hs, _t_hs: savgol_filter(
                 _x_hs,
                 window_length=self.lhs4d - 1,
@@ -128,7 +128,7 @@ class PlanarHsaVelocityEstimatorNode(Node):
         )
 
         # timer for publishing the velocity messages
-        self.declare_parameter("frequency", 200.0)
+        self.declare_parameter("frequency", 150.0)
         self.create_timer(
             1.0 / self.get_parameter("frequency").value, self.timer_callback
         )
