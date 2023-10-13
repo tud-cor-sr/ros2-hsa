@@ -60,10 +60,10 @@ class PlanarHsaVelocityEstimatorNode(Node):
             self.lhs4d = 4
             self.num_derivative_fn = jit(partial(jnp.gradient, axis=0))
         elif self.num_derivative_method == "derivative_savitzky_golay":
-            self.lhs4d = 30
+            self.lhs4d = 20
             # we are only interested in the last (i.e., most recent) derivative
             self.num_derivative_fn = partial(
-                derivative.SavitzkyGolay(left=0.1, right=0.0, order=3).compute,
+                derivative.SavitzkyGolay(left=(self.lhs4d - 3) / 200.0, right=0.0, order=3).compute,
                 i=-1
             )
         elif self.num_derivative_method == "derivative_spline":
