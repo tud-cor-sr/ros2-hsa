@@ -82,7 +82,7 @@ class PlanarSimNode(Node):
         # initialize ODE solver
         self.declare_parameter("sim_dt", 1e-4)
         self.sim_dt = jnp.array(self.get_parameter("sim_dt").value)
-        self.declare_parameter("control_frequency", 100)
+        self.declare_parameter("control_frequency", 100.0)
         self.control_frequency = self.get_parameter("control_frequency").value
         self.control_dt = 1 / self.control_frequency
 
