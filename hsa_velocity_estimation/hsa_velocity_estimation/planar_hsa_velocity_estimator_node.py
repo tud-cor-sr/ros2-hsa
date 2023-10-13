@@ -177,8 +177,7 @@ class PlanarHsaVelocityEstimatorNode(Node):
                 q_d.append(self.num_derivative_fn(self.q_hs[:, q_idx], t_hs[:, q_idx]))
             q_d = jnp.stack(q_d, axis=0)
         else:
-            q_d_hs = self.num_derivative_fn(self.q_hs, t_hs)
-            q_d = q_d_hs[-1]
+            q_d = self.num_derivative_fn(self.q_hs, t_hs)
 
         return self.tq_hs[-1], q_d
 
