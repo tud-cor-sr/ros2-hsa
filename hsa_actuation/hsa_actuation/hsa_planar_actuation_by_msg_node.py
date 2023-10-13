@@ -16,12 +16,14 @@ class HsaPlanarActuationByMsgNode(HsaPlanarActuationBaseNode):
     def __init__(self):
         super().__init__(
             node_name="hsa_planar_actuation_by_msg_node",
-            post_present_motor_angles_receival_callback=self.present_motor_angles_callback
+            post_present_motor_angles_receival_callback=self.present_motor_angles_callback,
         )
 
         # create the publisher of the current actuation
-        self.phi = jnp.zeros((self.control_handedness.shape[0], ))
-        self.declare_parameter("present_planar_actuation_topic", "present_planar_actuation")
+        self.phi = jnp.zeros((self.control_handedness.shape[0],))
+        self.declare_parameter(
+            "present_planar_actuation_topic", "present_planar_actuation"
+        )
         self.present_planar_actuation_pub = self.create_publisher(
             Float64MultiArray,
             self.get_parameter("present_planar_actuation_topic").value,

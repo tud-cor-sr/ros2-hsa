@@ -10,7 +10,11 @@ from dynamixel_control_custom_interfaces.srv import GetPositions
 
 
 class HsaActuationBaseNode(Node):
-    def __init__(self, node_name: str, post_present_motor_angles_receival_callback: Callable = None):
+    def __init__(
+        self,
+        node_name: str,
+        post_present_motor_angles_receival_callback: Callable = None,
+    ):
         super().__init__(node_name)
 
         self.declare_parameter("get_motor_positions_service_name", "/get_positions")
@@ -56,7 +60,9 @@ class HsaActuationBaseNode(Node):
         self.present_motor_angles_frequency = self.get_parameter(
             "present_motor_angles_frequency"
         ).value
-        self.post_present_motor_angles_receival_callback = post_present_motor_angles_receival_callback
+        self.post_present_motor_angles_receival_callback = (
+            post_present_motor_angles_receival_callback
+        )
         self.present_motor_angles_timer = self.create_timer(
             1.0 / self.present_motor_angles_frequency,
             self.get_present_motor_state_async,
@@ -120,7 +126,10 @@ class HsaActuationBaseNode(Node):
         if self.post_present_motor_angles_receival_callback is None:
             future.add_done_callback(self._get_present_motor_state_callback)
         else:
-            fns_list = (self._get_present_motor_state_callback, self.post_present_motor_angles_receival_callback)
+            fns_list = (
+                self._get_present_motor_state_callback,
+                self.post_present_motor_angles_receival_callback,
+            )
             done_callback_fn = partial(reduce, lambda r, f: f(r), fns_list)
             future.add_done_callback(done_callback_fn)
 

@@ -70,8 +70,12 @@ class PlanarSimNode(Node):
         self.xi_eq = sys_helpers["rest_strains_fn"](self.params)  # rest strains
 
         # initialize forward kinematic functions
-        self.forward_kinematics_end_effector_fn = jit(partial(forward_kinematics_end_effector_fn, self.params))
-        self.jacobian_end_effector_fn = jit(partial(jacobian_end_effector_fn, self.params))
+        self.forward_kinematics_end_effector_fn = jit(
+            partial(forward_kinematics_end_effector_fn, self.params)
+        )
+        self.jacobian_end_effector_fn = jit(
+            partial(jacobian_end_effector_fn, self.params)
+        )
 
         # initialize state and control input
         self.q = jnp.zeros_like(self.xi_eq)  # generalized coordinates
@@ -218,20 +222,24 @@ class PlanarSimNode(Node):
         self.configuration_velocity_pub.publish(configuration_velocity_msg)
 
         # publish the end-effector pose
-        end_effector_pose_msg = Pose2DStamped(pose=Pose2D(
-            x=chiee[0].item(),
-            y=chiee[1].item(),
-            theta=chiee[2].item(),
-        ))
+        end_effector_pose_msg = Pose2DStamped(
+            pose=Pose2D(
+                x=chiee[0].item(),
+                y=chiee[1].item(),
+                theta=chiee[2].item(),
+            )
+        )
         end_effector_pose_msg.header.stamp = clock_current_time_obj.to_msg()
         self.end_effector_pose_pub.publish(end_effector_pose_msg)
 
         # publish the end-effector velocity
-        end_effector_velocity_msg = Pose2DStamped(pose=Pose2D(
-            x=chiee_d[0].item(),
-            y=chiee_d[1].item(),
-            theta=chiee_d[2].item(),
-        ))
+        end_effector_velocity_msg = Pose2DStamped(
+            pose=Pose2D(
+                x=chiee_d[0].item(),
+                y=chiee_d[1].item(),
+                theta=chiee_d[2].item(),
+            )
+        )
         end_effector_velocity_msg.header.stamp = clock_current_time_obj.to_msg()
         self.end_effector_velocity_pub.publish(end_effector_velocity_msg)
 

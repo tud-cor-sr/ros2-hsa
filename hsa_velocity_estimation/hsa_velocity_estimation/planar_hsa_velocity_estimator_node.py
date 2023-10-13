@@ -40,13 +40,11 @@ class PlanarHsaVelocityEstimatorNode(Node):
         self.q_d_pub = self.create_publisher(
             PlanarCsConfiguration,
             self.get_parameter("configuration_velocity_topic").value,
-            10
+            10,
         )
         self.declare_parameter("end_effector_velocity_topic", "end_effector_velocity")
         self.chiee_d_pub = self.create_publisher(
-            Pose2DStamped,
-            self.get_parameter("end_effector_velocity_topic").value,
-            10
+            Pose2DStamped, self.get_parameter("end_effector_velocity_topic").value, 10
         )
 
         # initialize configuration and end-effector pose velocities
@@ -61,7 +59,9 @@ class PlanarHsaVelocityEstimatorNode(Node):
             self.lhs4d = 4
             self.num_derivative_fn = jit(
                 # we assume a constant sampling rate
-                lambda _x_hs, _t_hs: jnp.gradient(_x_hs, jnp.mean(_t_hs[1:] - _t_hs[:-1]), axis=0)
+                lambda _x_hs, _t_hs: jnp.gradient(
+                    _x_hs, jnp.mean(_t_hs[1:] - _t_hs[:-1]), axis=0
+                )
             )
         elif self.num_derivative_method == "scipy_savgol_filter":
             self.lhs4d = 21
@@ -78,15 +78,16 @@ class PlanarHsaVelocityEstimatorNode(Node):
             self.lhs4d = 20
             # we are only interested in the last (i.e., most recent) derivative
             self.num_derivative_fn = partial(
-                derivative.SavitzkyGolay(left=(self.lhs4d - 3) / 200.0, right=0.0, order=3).compute,
-                i=-1
+                derivative.SavitzkyGolay(
+                    left=(self.lhs4d - 3) / 200.0, right=0.0, order=3
+                ).compute,
+                i=-1,
             )
         elif self.num_derivative_method == "derivative_spline":
             self.lhs4d = 16
             # we are only interested in the last (i.e., most recent) derivative
             self.num_derivative_fn = partial(
-                derivative.Spline(s=1.0, order=3).compute,
-                i=-1
+                derivative.Spline(s=1.0, order=3).compute, i=-1
             )
         elif self.num_derivative_method == "numderivax_savitzky_golay":
             self.lhs4d = 25
@@ -104,8 +105,10 @@ class PlanarHsaVelocityEstimatorNode(Node):
                 )
             )
         else:
-            raise ValueError(f"Unknown num_derivative_method: {self.num_derivative_method}")
-        
+            raise ValueError(
+                f"Unknown num_derivative_method: {self.num_derivative_method}"
+            )
+
         self.tq_hs = jnp.zeros((self.lhs4d,))
         self.tchiee_hs = jnp.zeros((self.lhs4d,))
         self.q_hs, self.chiee_hs = None, None
@@ -177,12 +180,20 @@ class PlanarHsaVelocityEstimatorNode(Node):
             return 0.0, self.q_d
 
         # subtract the first time stamp from all time stamps to avoid numerical issues
-        t_hs = jnp.repeat(jnp.expand_dims(self.tq_hs - self.tq_hs[0], axis=-1), self.q_hs.shape[-1], axis=-1)
+        t_hs = jnp.repeat(
+            jnp.expand_dims(self.tq_hs - self.tq_hs[0], axis=-1),
+            self.q_hs.shape[-1],
+            axis=-1,
+        )
 
         if self.num_derivative_method in ["numpy_gradient", "scipy_savgol_filter"]:
             q_d_hs = self.num_derivative_fn(self.q_hs, t_hs)
             q_d = q_d_hs[-1]
-        elif self.num_derivative_method in ["derivative_finite_differences", "derivative_savitzky_golay", "derivative_spline"]:
+        elif self.num_derivative_method in [
+            "derivative_finite_differences",
+            "derivative_savitzky_golay",
+            "derivative_spline",
+        ]:
             # iterate through configuration variables
             q_d = []
             for q_idx in range(self.q_hs.shape[-1]):
@@ -206,23 +217,35 @@ class PlanarHsaVelocityEstimatorNode(Node):
             return 0.0, self.chiee_d
 
         # subtract the first time stamp from all time stamps to avoid numerical issues
-        t_hs = jnp.repeat(jnp.expand_dims(self.tchiee_hs - self.tchiee_hs[0], axis=-1), self.chiee_hs.shape[-1], axis=-1)
+        t_hs = jnp.repeat(
+            jnp.expand_dims(self.tchiee_hs - self.tchiee_hs[0], axis=-1),
+            self.chiee_hs.shape[-1],
+            axis=-1,
+        )
 
         if self.num_derivative_method in ["numpy_gradient", "scipy_savgol_filter"]:
             chiee_d_hs = self.num_derivative_fn(self.chiee_hs, t_hs)
             chiee_d = chiee_d_hs[-1]
-        elif self.num_derivative_method in ["derivative_finite_differences", "derivative_savitzky_golay", "derivative_spline"]:
+        elif self.num_derivative_method in [
+            "derivative_finite_differences",
+            "derivative_savitzky_golay",
+            "derivative_spline",
+        ]:
             # iterate through configuration variables
             chiee_d = []
             for chiee_idx in range(self.chiee_hs.shape[-1]):
                 # derivative for the last (i.e., most recent) time step
-                chiee_d.append(self.num_derivative_fn(self.chiee_hs[:, chiee_idx], t_hs[:, chiee_idx]))
+                chiee_d.append(
+                    self.num_derivative_fn(
+                        self.chiee_hs[:, chiee_idx], t_hs[:, chiee_idx]
+                    )
+                )
             chiee_d = jnp.stack(chiee_d, axis=0)
         else:
             chiee_d = self.num_derivative_fn(self.chiee_hs, t_hs)
 
         return self.tchiee_hs[-1], chiee_d
-    
+
     def timer_callback(self):
         tq, self.q_d = self.compute_q_d()
         tchiee, self.chiee_d = self.compute_chiee_d()
@@ -246,6 +269,7 @@ class PlanarHsaVelocityEstimatorNode(Node):
         msg.pose.y = self.chiee_d[1].item()
         msg.pose.theta = self.chiee_d[2].item()
         self.chiee_d_pub.publish(msg)
+
 
 def main(args=None):
     # Start node, and spin

@@ -118,7 +118,9 @@ def robot_rendering_factory(
 
     batched_chi2u = jit(vmap(chi2u, in_axes=-1, out_axes=0))
 
-    def draw_robot_fn(q: Array, chiee_des: Array = None, chiee_wp: Array = None) -> onp.ndarray:
+    def draw_robot_fn(
+        q: Array, chiee_des: Array = None, chiee_wp: Array = None
+    ) -> onp.ndarray:
         """
         Draw the robot for a given configuration.
         Args:

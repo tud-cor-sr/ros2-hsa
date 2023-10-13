@@ -157,7 +157,9 @@ class PlanarVizNode(Node):
         )
 
     def waypoint_callback(self, msg: PlanarSetpoint):
-        self.chiee_wp = jnp.array([msg.chiee_des.x, msg.chiee_des.y, msg.chiee_des.theta])
+        self.chiee_wp = jnp.array(
+            [msg.chiee_des.x, msg.chiee_des.y, msg.chiee_des.theta]
+        )
 
     def render_robot(self):
         # self.get_logger().info(f"Rendering robot for configuration: {self.q}")
