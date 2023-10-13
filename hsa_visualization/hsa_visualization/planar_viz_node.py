@@ -128,6 +128,15 @@ class PlanarVizNode(Node):
             10,
         )
 
+        self.chiee_wp = None
+        self.declare_parameter("waypoint_topic", "waypoint")
+        self.waypoint_sub = self.create_subscription(
+            PlanarSetpoint,
+            self.get_parameter("waypoint_topic").value,
+            self.waypoint_callback,
+            10,
+        )
+
         self.declare_parameter("rendering_frequency", 10.0)
         self.rendering_timer = self.create_timer(
             1 / self.get_parameter("rendering_frequency").value, self.render_robot
@@ -147,9 +156,12 @@ class PlanarVizNode(Node):
             [msg.chiee_des.x, msg.chiee_des.y, msg.chiee_des.theta]
         )
 
+    def waypoint_callback(self, msg: PlanarSetpoint):
+        self.chiee_wp = jnp.array([msg.chiee_des.x, msg.chiee_des.y, msg.chiee_des.theta])
+
     def render_robot(self):
         # self.get_logger().info(f"Rendering robot for configuration: {self.q}")
-        img = self.rendering_fn(self.q, self.chiee_des)
+        img = self.rendering_fn(self.q, self.chiee_des, self.chiee_wp)
 
         img_msg = self.ros_opencv_bridge.cv2_to_imgmsg(img)
         img_msg.header = self.q_msg.header
