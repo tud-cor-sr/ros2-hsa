@@ -51,7 +51,7 @@ def robot_rendering_factory(
         platform_color = (255, 0, 0)  # blue color in BGR
         end_effector_color = (255, 255, 255)  # white color in BGR
         setpoint_color = (0, 0, 255)  # red color in BGR
-        waypoint_color = (82, 128, 3)  # dark green color in BGR
+        attractor_color = (82, 128, 3)  # dark green color in BGR
     else:
         background_color = (255, 255, 255)  # white in BGR
         base_color = (0, 0, 0)  # black base color in BGR
@@ -60,7 +60,7 @@ def robot_rendering_factory(
         platform_color = (0, 0, 0)  # black color in BGR
         end_effector_color = (255, 0, 0)  # blue color in BGR
         setpoint_color = (0, 0, 255)  # red color in BGR
-        waypoint_color = (0, 255, 0)  # green color in BGR
+        attractor_color = (0, 255, 0)  # green color in BGR
 
     batched_forward_kinematics_virtual_backbone_fn = jit(
         vmap(
@@ -119,14 +119,14 @@ def robot_rendering_factory(
     batched_chi2u = jit(vmap(chi2u, in_axes=-1, out_axes=0))
 
     def draw_robot_fn(
-        q: Array, chiee_des: Array = None, chiee_wp: Array = None
+        q: Array, chiee_des: Array = None, chiee_at: Array = None
     ) -> onp.ndarray:
         """
         Draw the robot for a given configuration.
         Args:
             q: configuration of the robot of shape (3)
             chiee_des: desired end-effector pose of shape (3)
-            chiee_wp: waypoint end-effector pose of shape (3)
+            chiee_at: attractor end-effector pose of shape (3)
         """
         # poses along the robot of shape (3, N)
         chiv_ps = batched_forward_kinematics_virtual_backbone_fn(q, s_ps)
@@ -275,18 +275,18 @@ def robot_rendering_factory(
                 thickness=-1,
             )
 
-        if chiee_wp is not None:
-            # draw the waypoint
-            setpoint = chi2u(chiee_wp)
+        if chiee_at is not None:
+            # draw the attractor
+            setpoint = chi2u(chiee_at)
             cv2.rectangle(
                 img,
                 pt1=(setpoint[0].item() - 13, setpoint[1].item() - 13),
                 pt2=(setpoint[0].item() + 13, setpoint[1].item() + 13),
-                color=waypoint_color,
+                color=attractor_color,
                 thickness=-1,
             )
 
-        if chiee_des is not None or chiee_wp is not None:
+        if chiee_des is not None or chiee_at is not None:
             # draw the present end-effector pose
             end_effector = chi2u(forward_kinematics_end_effector_fn(params, q))
             cv2.circle(
