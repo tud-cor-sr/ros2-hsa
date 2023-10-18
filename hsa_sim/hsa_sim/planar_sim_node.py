@@ -109,7 +109,7 @@ class PlanarSimNode(Node):
             Returns:
                 _x1: final state
             """
-            ode_term = ODETerm(partial(self.ode_fn, u=_phi))
+            ode_term = ODETerm(self.ode_fn)
             sol = diffeqsolve(
                 ode_term,
                 solver=self.ode_solver,
@@ -117,6 +117,7 @@ class PlanarSimNode(Node):
                 t1=_t1,
                 dt0=self.sim_dt,
                 y0=_x0,
+                args=_phi,
                 max_steps=None,
                 # saveat=SaveAt(ts=video_ts),
             )
