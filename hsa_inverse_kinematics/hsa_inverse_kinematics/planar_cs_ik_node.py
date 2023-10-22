@@ -51,7 +51,7 @@ class PlanarCsIkNode(Node):
             / "symbolic_expressions"
             / f"planar_hsa_ns-1_nrs-2.dill"
         )
-        (_, _, _, inverse_kinematics_end_effector_fn, _, _) = planar_hsa.factory(
+        (_, _, _, inverse_kinematics_end_effector_fn, _, sys_helpers) = planar_hsa.factory(
             sym_exp_filepath
         )
 
@@ -67,19 +67,19 @@ class PlanarCsIkNode(Node):
         # parameters for specifying different rest strains
         self.declare_parameter("kappa_b_eq", self.params["kappa_b_eq"].mean().item())
         self.declare_parameter("sigma_sh_eq", self.params["sigma_sh_eq"].mean().item())
-        self.declare_parameter("sigma_a_eq1", self.params["sigma_a_eq"][0, 0].item())
-        self.declare_parameter("sigma_a_eq2", self.params["sigma_a_eq"][0, 1].item())
+        self.declare_parameter("sigma_a_eq", self.params["sigma_a_eq"].flatten().tolist())
         kappa_b_eq = self.get_parameter("kappa_b_eq").value
         sigma_sh_eq = self.get_parameter("sigma_sh_eq").value
-        sigma_a_eq1 = self.get_parameter("sigma_a_eq1").value
-        sigma_a_eq2 = self.get_parameter("sigma_a_eq2").value
+        sigma_a_eq = self.get_parameter("sigma_a_eq").value
         self.params["kappa_b_eq"] = kappa_b_eq * jnp.ones_like(
             self.params["kappa_b_eq"]
         )
         self.params["sigma_sh_eq"] = sigma_sh_eq * jnp.ones_like(
             self.params["sigma_sh_eq"]
         )
-        self.params["sigma_a_eq"] = jnp.array([[sigma_a_eq1, sigma_a_eq2]])
+        self.params["sigma_a_eq"] = jnp.array(sigma_a_eq).reshape(self.params["sigma_a_eq"].shape)
+        # actual rest strain
+        self.xi_eq = sys_helpers["rest_strains_fn"](self.params)  # rest strains
         self.get_logger().info(f"sigma_a_eq: {self.params['sigma_a_eq']}")
 
         # intialize and jit the inverse kinematics function
