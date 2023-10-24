@@ -96,7 +96,7 @@ def main(args=None):
             # Create an instance of your custom message
             # Assign received data to the message field
             msg = Joy(axes=joy_signal)
-            msg.header = node.get_clock().now().to_msg()
+            msg.header.stamp = node.get_clock().now().to_msg()
             pub.publish(msg)
             # node.get_logger().info(f"Published msg: {msg}")
 
