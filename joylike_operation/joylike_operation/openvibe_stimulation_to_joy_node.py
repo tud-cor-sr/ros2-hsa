@@ -25,7 +25,7 @@ def main(args=None):
 
     node.declare_parameter("joy_signal_topic", "joy_signal")
     joy_signal_topic = node.get_parameter("joy_signal_topic").value
-    pub = node.create_publisher(Joy, joy_signal_topic, 10)
+    pub = node.create_publisher(Joy, joy_signal_topic, rclpy.qos.qos_profile_system_default)
 
     node.declare_parameter("host", "localhost")
     host = node.get_parameter("host").value
