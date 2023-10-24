@@ -79,10 +79,10 @@ def main(args=None):
                 elif stimulation_type == 2:
                     # move to the right
                     joy_signal = [1.0, 0.0]
-                elif stimulation_type == 3:
+                elif stimulation_type == 12:
                     # move up
                     joy_signal = [0.0, 1.0]
-                elif stimulation_type == 4:
+                elif stimulation_type == 6:
                     # move down
                     joy_signal = [0.0, -1.0]
                 else:
