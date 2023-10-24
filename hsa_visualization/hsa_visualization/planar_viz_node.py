@@ -68,6 +68,10 @@ class PlanarVizNode(Node):
         # actual rest strain
         self.xi_eq = sys_helpers["rest_strains_fn"](self.params)  # rest strains
 
+        # pose offset of end-effector relative to top surface of the platform
+        self.declare_parameter("chiee_off", [0.0, 0.0, 0.0])
+        self.params["chiee_off"] = jnp.array(self.get_parameter("chiee_off").value)
+
         # initialize state and control input
         self.q = jnp.zeros_like(self.xi_eq)  # generalized coordinates
         self.q_msg = PlanarCsConfiguration()

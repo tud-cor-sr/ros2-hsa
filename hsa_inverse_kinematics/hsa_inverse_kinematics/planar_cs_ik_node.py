@@ -82,6 +82,10 @@ class PlanarCsIkNode(Node):
         self.xi_eq = sys_helpers["rest_strains_fn"](self.params)  # rest strains
         self.get_logger().info(f"sigma_a_eq: {self.params['sigma_a_eq']}")
 
+        # pose offset of end-effector relative to top surface of the platform
+        self.declare_parameter("chiee_off", [0.0, 0.0, 0.0])
+        self.params["chiee_off"] = jnp.array(self.get_parameter("chiee_off").value)
+
         # intialize and jit the inverse kinematics function
         self.inverse_kinematics_end_effector_fn = jit(
             partial(inverse_kinematics_end_effector_fn, self.params)
@@ -121,8 +125,9 @@ class PlanarCsIkNode(Node):
         rotmat = jnp.array(rot.as_matrix())
         euler_xyz = jnp.array(rot.as_euler("xyz", degrees=False))
 
-        # subtract distance from the platform markers to the top surface of the platform
-        # the MoCap markers of the platform are roughly 7 mm above the end-effector frame (e.g. top surface of the platform)
+        # subtract distance from the platform marker to the end-effector
+        # we assume that a reflective marker attached to the end-effector is chosen as the pivot point of the platform rigid body
+        # this pivot point reflective marker has a length of 7mm between its centroid and the surface of the end-effector
         position = position - rotmat @ jnp.array([0, 0, 0.007])
 
         # define the SE(2) pose of the end-effector frame\

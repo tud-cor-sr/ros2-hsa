@@ -15,7 +15,7 @@ LOG_LEVEL = "warn"
 
 common_params = {
     "hsa_material": "fpu",
-    "payload_mass": 0.0,  # kg
+    "mpl": 0.0,  # payload mass [kg]
 }
 viz_params = common_params | {
     "rendering_frequency": 20.0,

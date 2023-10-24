@@ -67,6 +67,16 @@ class PlanarSimNode(Node):
         # actual rest strain
         self.xi_eq = sys_helpers["rest_strains_fn"](self.params)  # rest strains
 
+        # pose offset of end-effector relative to top surface of the platform
+        self.declare_parameter("chiee_off", [0.0, 0.0, 0.0])
+        self.params["chiee_off"] = jnp.array(self.get_parameter("chiee_off").value)
+        # external payload mass
+        self.declare_parameter("mpl", 0.0)
+        self.params["mpl"] = self.get_parameter("mpl").value
+        # CoG of the payload relative to end-effector
+        self.declare_parameter("CoGpl", [0.0, 0.0])
+        self.params["CoGpl"] = jnp.array(self.get_parameter("CoGpl").value)
+
         # initialize forward kinematic functions
         self.forward_kinematics_end_effector_fn = jit(
             partial(forward_kinematics_end_effector_fn, self.params)
