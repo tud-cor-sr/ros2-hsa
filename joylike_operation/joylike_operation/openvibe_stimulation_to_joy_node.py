@@ -18,10 +18,10 @@ def main(args=None):
 
     node = rclpy.create_node("stimulation_receiver_node")
 
-    node.declare_parameter("joy_control_mode", "bending")
+    node.declare_parameter("joy_control_mode", "cartesian")
     joy_control_mode = node.get_parameter(
         "joy_control_mode"
-    ).value  # bending or cartesian
+    ).value  # bending, cartesian, or cartesian_switch
 
     node.declare_parameter("joy_signal_topic", "joy_signal")
     joy_signal_topic = node.get_parameter("joy_signal_topic").value
@@ -31,6 +31,10 @@ def main(args=None):
     host = node.get_parameter("host").value
     node.declare_parameter("port", 5678)
     port = node.get_parameter("port").value
+
+    # initialize activate direction as the y-axis
+    # this only applies to the joy_control_mode == "cartesian_switch"
+    active_dir = 1
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((host, port))
@@ -85,6 +89,26 @@ def main(args=None):
                 elif stimulation_type == 6:
                     # move down
                     joy_signal = [0.0, -1.0]
+                else:
+                    node.get_logger().error(
+                        f"Unknown stimulation type: {stimulation_type}"
+                    )
+                    continue
+            elif joy_control_mode == "cartesian_switch":
+                joy_signal = [0.0, 0.0]
+                # map the stimulation type to the joy signal
+                if stimulation_type == 16:
+                    # no stimulation / effect
+                    joy_signal = [0.0, 0.0]
+                elif stimulation_type == 1:
+                    # move negative (i.e. left or down)
+                    joy_signal[active_dir] = -1.0
+                elif stimulation_type == 2:
+                    # move positive (i.e. right or up)
+                    joy_signal[active_dir] = 1.0
+                elif stimulation_type == 10:
+                    # switch direction
+                    active_dir = (active_dir + 1) % 2
                 else:
                     node.get_logger().error(
                         f"Unknown stimulation type: {stimulation_type}"
