@@ -38,7 +38,7 @@ def main(args=None):
     node.declare_parameter("port", 5678)
     port = node.get_parameter("port").value
 
-    # initialize activate direction as the y-axis
+    # initialize activate direction as the x-axis
     # this only applies to the joy_control_mode == "cartesian_switch"
     active_axis = 0
 
