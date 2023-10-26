@@ -171,6 +171,16 @@ def robot_rendering_factory(
         #     img, (0, uv_robot_origin[1]), (w, h), color=base_color, thickness=-1
         # )
 
+        if draw_operational_workspace:
+            # draw the operational workspace
+            ws_boundary = onp.array(batched_chi2u(ws_boundary_ps.T))
+            cv2.fillPoly(
+                img, [ws_boundary], color=ws_background_color
+            )
+            # cv2.polylines(
+            #     img, [ws_boundary], isClosed=True, color=ws_boundary_color, thickness=2
+            # )
+
         # draw the virtual backbone
         # add the first point of the proximal cap and the last point of the distal cap
         chiv_ps = jnp.concatenate(
@@ -320,16 +330,6 @@ def robot_rendering_factory(
                 end_effector_color,
                 thickness=-1,
             )
-
-        if draw_operational_workspace:
-            # draw the operational workspace
-            ws_boundary = onp.array(batched_chi2u(ws_boundary_ps.T))
-            cv2.fillPoly(
-                img, [ws_boundary], color=ws_background_color
-            )
-            # cv2.polylines(
-            #     img, [ws_boundary], isClosed=True, color=ws_boundary_color, thickness=2
-            # )
 
         return img
 
