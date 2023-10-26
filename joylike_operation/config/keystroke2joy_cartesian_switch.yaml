@@ -1,0 +1,5 @@
+axes:
+  - ["KEY_LEFT", "KEY_RIGHT"]
+
+buttons:
+  - "KEY_SPACE"  # used for switching axes

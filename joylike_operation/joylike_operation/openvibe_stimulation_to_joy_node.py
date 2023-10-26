@@ -27,6 +27,12 @@ def main(args=None):
     joy_signal_topic = node.get_parameter("joy_signal_topic").value
     pub = node.create_publisher(Joy, joy_signal_topic, rclpy.qos.qos_profile_system_default)
 
+    if joy_control_mode == "bending":
+        node.num_axes = 1
+    else:
+        node.declare_parameter("num_axes", 2)
+        node.num_axes = node.get_parameter("num_axes").value
+
     node.declare_parameter("host", "localhost")
     host = node.get_parameter("host").value
     node.declare_parameter("port", 5678)
@@ -34,7 +40,7 @@ def main(args=None):
 
     # initialize activate direction as the y-axis
     # this only applies to the joy_control_mode == "cartesian_switch"
-    active_dir = 1
+    active_axis = 0
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((host, port))
@@ -95,20 +101,20 @@ def main(args=None):
                     )
                     continue
             elif joy_control_mode == "cartesian_switch":
-                joy_signal = [0.0, 0.0]
+                joy_signal = [0.0 for _ in range(node.num_axes)]
                 # map the stimulation type to the joy signal
                 if stimulation_type == 16:
                     # no stimulation / effect
-                    joy_signal = [0.0, 0.0]
+                    pass
                 elif stimulation_type == 1:
                     # move negative (i.e. left or down)
-                    joy_signal[active_dir] = -1.0
+                    joy_signal[active_axis] = -1.0
                 elif stimulation_type == 2:
                     # move positive (i.e. right or up)
-                    joy_signal[active_dir] = 1.0
+                    joy_signal[active_axis] = 1.0
                 elif stimulation_type == 10:
                     # switch direction
-                    active_dir = (active_dir + 1) % 2
+                    active_axis = (active_axis + 1) % 2
                 else:
                     node.get_logger().error(
                         f"Unknown stimulation type: {stimulation_type}"
