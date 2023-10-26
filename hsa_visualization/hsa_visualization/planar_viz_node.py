@@ -85,17 +85,22 @@ class PlanarVizNode(Node):
         self.declare_parameter("invert_colors", False)
         # x becomes -x and y becomes -y when rendering
         self.declare_parameter("invert_coordinates", True)
+        self.declare_parameter("draw_operational_workspace", False)
         self.rendering_fn = robot_rendering_factory(
             forward_kinematics_end_effector_fn,
             forward_kinematics_virtual_backbone_fn,
             sys_helpers["forward_kinematics_rod_fn"],
             sys_helpers["forward_kinematics_platform_fn"],
+            hsa_material=hsa_material,
             params=self.params,
             width=self.get_parameter("image_width").value,
             height=self.get_parameter("image_height").value,
             num_points=25,
             inverted_coordinates=self.get_parameter("invert_coordinates"),
             invert_colors=self.get_parameter("invert_colors"),
+            draw_operational_workspace=self.get_parameter(
+                "draw_operational_workspace"
+            ).value,
         )
         if self.open_cv2_window:
             cv2.namedWindow("Planar HSA rendering", cv2.WINDOW_NORMAL)
