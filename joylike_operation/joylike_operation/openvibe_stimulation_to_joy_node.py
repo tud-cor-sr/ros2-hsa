@@ -38,19 +38,29 @@ def main(args=None):
     node.declare_parameter("port", 5678)
     port = node.get_parameter("port").value
 
+    # define frequency of the main loop
+    node.declare_parameter("frequency", 100.0)
+    freq = node.get_parameter("frequency").value
+    rate = rclpy.rate.Rate(freq)
+
     # initialize activate direction as the x-axis
     # this only applies to the joy_control_mode == "cartesian_switch"
     active_axis = 0
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        # set socket to be non-blocking
+        s.setblocking(False)
         s.connect((host, port))
 
         node.get_logger().info(f"Listening on {host}:{port}")
 
         while rclpy.ok():
+            # sleep until it is time to listen to socket again
+            rate.sleep()
+
             tcp_data = s.recv(8)
             if not tcp_data:
-                break
+                continue
 
             # node.get_logger().info(f"Received raw tcp data: {tcp_data}")
 
