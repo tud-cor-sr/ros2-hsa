@@ -89,7 +89,7 @@ class KeyboardToJoyNode(Node):
             )
 
         self.declare_parameter("sampling_frequency", 50)
-        hz = (
+        sampling_frequency = (
             self.get_parameter("sampling_frequency").get_parameter_value().integer_value
         )
 
@@ -130,7 +130,7 @@ class KeyboardToJoyNode(Node):
         self.active_axis = 0
 
         # Start timer
-        dt = 1.0 / float(hz)
+        dt = 1.0 / float(sampling_frequency)
         self.create_timer(dt, self.main_loop)
 
     def keydown_callback(self, msg):
