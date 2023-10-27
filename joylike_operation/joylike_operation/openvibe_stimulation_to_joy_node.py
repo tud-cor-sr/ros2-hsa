@@ -4,7 +4,6 @@ import numpy as np
 import os
 import rclpy
 from pathlib import Path
-from playsound import playsound
 from sensor_msgs.msg import Joy
 import socket
 
@@ -58,7 +57,7 @@ def main(args=None):
     node.declare_parameter("accuracy_for_switch", 0.8)
     node.accuracy_for_switch = node.get_parameter("accuracy_for_switch").value
 
-    node.get_logger().warn(switching_sound_path)
+    # node.get_logger().warn(switching_sound_path)
 
     # os.system(f"mpg123 {switching_sound_path}")
     # from pydub import AudioSegment
@@ -67,7 +66,7 @@ def main(args=None):
     # song = AudioSegment.from_mp3(switching_sound_path)
     # play(song)
 
-    node.get_logger().warn("Played song")
+    # node.get_logger().warn("Played song")
 
     # initialize activate direction as the x-axis
     # this only applies to the joy_control_mode == "cartesian_switch"
@@ -156,10 +155,10 @@ def main(args=None):
                         active_axis = (active_axis + 1) % node.num_axes
                         sw_hs[-1] = 1
                         # play a sound to indicate that we switched
-                        playsound(str(
-                                assets_dir
-                                / "relax-message-tone.mp3"
-                        ))
+                        # playsound(str(
+                        #         assets_dir
+                        #         / "relax-message-tone.mp3"
+                        # ))
                         node.get_logger().warn(f"Switched active axis to {active_axis}") 
 
                 # map the stimulation type to the joy signal
