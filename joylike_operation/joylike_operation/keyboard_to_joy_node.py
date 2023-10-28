@@ -111,10 +111,6 @@ class KeyboardToJoyNode(Node):
         self.joy_pub = self.create_publisher(
             Joy, joy_signal_topic, qos.qos_profile_system_default
         )
-        if self.joy_control_mode == "cartesian_switch":
-            self.cartesian_switch_state_pub = self.create_publisher(
-                Int32, "cartesian_switch_state", qos.qos_profile_system_default
-            )
 
         # Keyboard callback
         self.keydown_sub = self.create_subscription(
@@ -124,13 +120,15 @@ class KeyboardToJoyNode(Node):
             Key, "keyup", self.keyup_callback, qos.qos_profile_system_default
         )
 
-        # initialize activate direction as the x-axis
-        # this only applies to the joy_control_mode == "cartesian_switch"
-        self.active_axis = 0
         if self.joy_control_mode == "cartesian_switch":
             self.declare_parameter("num_axes", 2)
             self.num_axes = self.get_parameter("num_axes").value
-            self.cartesian_switch_state_pub.publish(Int32(data=self.active_axis))
+            
+            # initialize activate direction as the x-axis
+            self.active_axis = 0
+            self.cartesian_switch_state_pub = self.create_publisher(
+                Int32, "cartesian_switch_state", qos.qos_profile_system_default
+            )
         else:
             self.num_axes = len(self.axes)
 
@@ -146,7 +144,6 @@ class KeyboardToJoyNode(Node):
             if self.joy_control_mode == "cartesian_switch" and but_idx == 0 and is_down_event_active:
                 # switch the active axis when the first button is pressed
                 self.active_axis = (self.active_axis + 1) % self.num_axes
-                self.cartesian_switch_state_pub.publish(Int32(data=self.active_axis))
 
     def keyup_callback(self, msg):
         for ax in self.axes:
@@ -156,6 +153,9 @@ class KeyboardToJoyNode(Node):
 
     def main_loop(self):
         if self.joy_control_mode == "cartesian_switch":
+            # publish message with current Cartesian switch state
+            self.cartesian_switch_state_pub.publish(Int32(data=self.active_axis))
+
             joy_signal = []
             # we just consider the first keyboard axis as an input source
             ax = self.axes[0]
@@ -168,9 +168,10 @@ class KeyboardToJoyNode(Node):
             msg = Joy(
                 axes=[a.get() for a in self.axes], buttons=[b.get() for b in self.buttons]
             )
+
+        # publish Joy msg
         msg.header.stamp = self.get_clock().now().to_msg()
         self.joy_pub.publish(msg)
-
 
 def main(args=None):
     # Start node, and spin

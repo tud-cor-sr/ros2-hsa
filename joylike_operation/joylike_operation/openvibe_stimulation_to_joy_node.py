@@ -5,6 +5,7 @@ import os
 import rclpy
 from pathlib import Path
 from sensor_msgs.msg import Joy
+from std_msgs.msg import Int32
 import socket
 
 
@@ -35,6 +36,13 @@ def main(args=None):
     node.declare_parameter("joy_signal_topic", "joy_signal")
     joy_signal_topic = node.get_parameter("joy_signal_topic").value
     pub = node.create_publisher(Joy, joy_signal_topic, rclpy.qos.qos_profile_system_default)
+
+    if joy_control_mode == "cartesian_switch":
+        # initialize activate direction as the x-axis
+        active_axis = 0
+        cartesian_switch_state_pub = node.create_publisher(
+            Int32, "cartesian_switch_state", rclpy.qos.qos_profile_system_default
+        )
 
     if joy_control_mode == "bending":
         node.num_axes = 1
@@ -67,10 +75,6 @@ def main(args=None):
     # play(song)
 
     # node.get_logger().warn("Played song")
-
-    # initialize activate direction as the x-axis
-    # this only applies to the joy_control_mode == "cartesian_switch"
-    active_axis = 0
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((host, port))
@@ -139,10 +143,11 @@ def main(args=None):
                     )
                     continue
             elif joy_control_mode == "cartesian_switch":
+                # publish message with current Cartesian switch state
+                cartesian_switch_state_pub.publish(Int32(data=active_axis))
+
                 joy_signal = [0.0 for _ in range(node.num_axes)]
-
                 switch_stimulation = 12
-
                 # if the buffer is not full yet, we don't want to switch
                 if (t_hs != 0.0).sum() == lhs:
                     # check if we should switch the active axis
@@ -182,8 +187,7 @@ def main(args=None):
             else:
                 raise ValueError(f"Unknown joy control mode: {joy_control_mode}")
 
-            # Create an instance of your custom message
-            # Assign received data to the message field
+            # publish Joy msg
             msg = Joy(axes=joy_signal)
             msg.header.stamp = node.get_clock().now().to_msg()
             pub.publish(msg)
