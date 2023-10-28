@@ -60,6 +60,7 @@ def robot_rendering_factory(
         attractor_color = (82, 128, 3)  # dark green color in BGR
         ws_background_color = (70, 70, 70)  # dark gray color in BGR
         ws_boundary_color = (255, 255, 255)  # white color in BGR
+        active_attraction_axis_color = (255, 255, 255)
     else:
         background_color = (255, 255, 255)  # white in BGR
         base_color = (0, 0, 0)  # black base color in BGR
@@ -71,6 +72,7 @@ def robot_rendering_factory(
         attractor_color = (0, 255, 0)  # green color in BGR
         ws_background_color = (160, 160, 160)  # light gray color in BGR
         ws_boundary_color = (0, 0, 0)  # black color in BGR
+        active_attraction_axis_color = (0, 0, 0)
 
     batched_forward_kinematics_virtual_backbone_fn = jit(
         vmap(
@@ -143,7 +145,7 @@ def robot_rendering_factory(
 
 
     def draw_robot_fn(
-        q: Array, chiee_des: Array = None, chiee_at: Array = None
+        q: Array, chiee_des: Array = None, chiee_at: Array = None, active_attraction_axis: int = -1
     ) -> onp.ndarray:
         """
         Draw the robot for a given configuration.
@@ -151,6 +153,7 @@ def robot_rendering_factory(
             q: configuration of the robot of shape (3)
             chiee_des: desired end-effector pose of shape (3)
             chiee_at: attractor end-effector pose of shape (3)
+            active_attraction_axis: the operator (or an algorithm) is currently moving the attractor along the active attractor axis
         """
         # poses along the robot of shape (3, N)
         chiv_ps = batched_forward_kinematics_virtual_backbone_fn(q, s_ps)
@@ -330,6 +333,22 @@ def robot_rendering_factory(
                 end_effector_color,
                 thickness=-1,
             )
+
+        arrow_origin = (25, 25)
+        arrow_length = 15
+        arrow_kwargs = {
+            "color": active_attraction_axis_color,
+            "thickness": 3,
+            "tipLength": 0.3
+        }
+        if active_attraction_axis == 0:
+            # we show double arrows along the x-axis
+            cv2.arrowedLine(img, arrow_origin, (arrow_origin[0] + arrow_length, arrow_origin[1]), **arrow_kwargs)
+            cv2.arrowedLine(img, arrow_origin, (arrow_origin[0] - arrow_length, arrow_origin[1]), **arrow_kwargs)
+        elif active_attraction_axis == 1:
+            # we show double arrows along the y-axis
+            cv2.arrowedLine(img, arrow_origin, (arrow_origin[0], arrow_origin[1] + arrow_length), **arrow_kwargs)
+            cv2.arrowedLine(img, arrow_origin, (arrow_origin[0], arrow_origin[1] - arrow_length), **arrow_kwargs)
 
         return img
 

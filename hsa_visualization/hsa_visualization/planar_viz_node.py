@@ -14,6 +14,7 @@ from pathlib import Path
 from hsa_control_interfaces.msg import PlanarSetpoint
 from mocap_optitrack_interfaces.msg import PlanarCsConfiguration
 from sensor_msgs.msg import Image
+from std_msgs.msg import Int32
 
 import jsrm
 from jsrm.parameters.hsa_params import PARAMS_FPU_CONTROL, PARAMS_EPU_CONTROL
@@ -144,6 +145,17 @@ class PlanarVizNode(Node):
             10,
         )
 
+        self.declare_parameter("cartesian_switch_state_topic", "None")
+        cartesian_switch_state_topic = self.get_parameter(
+            "cartesian_switch_state_topic"
+        ).value
+        self.cartesian_switch_state_pub = None
+        self.active_attraction_axis = -1
+        if cartesian_switch_state_topic != "None":
+            self.cartesian_switch_state_pub = self.create_subscription(
+                Int32, cartesian_switch_state_topic, self.cartesian_switch_callback, 10
+            )
+
         self.declare_parameter("rendering_frequency", 10.0)
         self.rendering_timer = self.create_timer(
             1 / self.get_parameter("rendering_frequency").value, self.render_robot
@@ -168,9 +180,13 @@ class PlanarVizNode(Node):
             [msg.chiee_des.x, msg.chiee_des.y, msg.chiee_des.theta]
         )
 
+    def cartesian_switch_callback(self, msg: Int32):
+        # the operator (or an algorithm) is currently moving the attractor along the active attractor axis
+        self.active_attraction_axis = msg.data
+                                  
     def render_robot(self):
         # self.get_logger().info(f"Rendering robot for configuration: {self.q}")
-        img = self.rendering_fn(self.q, self.chiee_des, self.chiee_at)
+        img = self.rendering_fn(self.q, chiee_des=self.chiee_des, chiee_at=self.chiee_at, active_attraction_axis=self.active_attraction_axis)
 
         img_msg = self.ros_opencv_bridge.cv2_to_imgmsg(img)
         img_msg.header = self.q_msg.header

@@ -8,8 +8,9 @@ from rclpy.node import Node
 from rcl_interfaces.msg import ParameterDescriptor
 from pathlib import Path
 
-from sensor_msgs.msg import Joy
 from keyboard_msgs.msg import Key
+from sensor_msgs.msg import Joy
+from std_msgs.msg import Int32
 
 import yaml
 
@@ -110,6 +111,10 @@ class KeyboardToJoyNode(Node):
         self.joy_pub = self.create_publisher(
             Joy, joy_signal_topic, qos.qos_profile_system_default
         )
+        if self.joy_control_mode == "cartesian_switch":
+            self.cartesian_switch_state_pub = self.create_publisher(
+                Int32, "cartesian_switch_state", qos.qos_profile_system_default
+            )
 
         # Keyboard callback
         self.keydown_sub = self.create_subscription(
@@ -119,15 +124,15 @@ class KeyboardToJoyNode(Node):
             Key, "keyup", self.keyup_callback, qos.qos_profile_system_default
         )
 
+        # initialize activate direction as the x-axis
+        # this only applies to the joy_control_mode == "cartesian_switch"
+        self.active_axis = 0
         if self.joy_control_mode == "cartesian_switch":
             self.declare_parameter("num_axes", 2)
             self.num_axes = self.get_parameter("num_axes").value
+            self.cartesian_switch_state_pub.publish(Int32(data=self.active_axis))
         else:
             self.num_axes = len(self.axes)
-
-        # initialize activate direction as the y-axis
-        # this only applies to the joy_control_mode == "cartesian_switch"
-        self.active_axis = 0
 
         # Start timer
         dt = 1.0 / float(sampling_frequency)
@@ -141,6 +146,7 @@ class KeyboardToJoyNode(Node):
             if self.joy_control_mode == "cartesian_switch" and but_idx == 0 and is_down_event_active:
                 # switch the active axis when the first button is pressed
                 self.active_axis = (self.active_axis + 1) % self.num_axes
+                self.cartesian_switch_state_pub.publish(Int32(data=self.active_axis))
 
     def keyup_callback(self, msg):
         for ax in self.axes:
