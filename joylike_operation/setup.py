@@ -25,6 +25,7 @@ setup(
         "console_scripts": [
             f"keyboard_to_joy_node = {package_name}.keyboard_to_joy_node:main",
             f"openvibe_stimulation_to_joy_node = {package_name}.openvibe_stimulation_to_joy_node:main",
+            f"openvibe_two_classifier_stimulation_to_joy_node = {package_name}.openvibe_two_classifier_stimulation_to_joy_node:main",
         ],
     },
 )
