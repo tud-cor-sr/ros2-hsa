@@ -23,6 +23,9 @@ def main():
     ts_q_ls, q_ls = [], []
     ts_q_d_ls, q_d_ls = [], []
     ts_chiee_ls, chiee_ls = [], []
+    ts_chiee_des_ls, chiee_des_ls = [], []
+    ts_q_des_ls, q_des_ls = [], []
+    ts_joy_signal_ls, joy_signal_ls = [], []
 
     controller_info_ts = {
         "ts": [],
@@ -138,6 +141,32 @@ def main():
                 controller_info_ts["motor_goal_angles"].append(
                     np.array(msg["motor_goal_angles"])
                 )
+        elif topic == "/joy_signal":
+            ts_joy_signal_ls.append(time)
+            joy_signal_ls.append(msg["axes"])
+        elif topic == "/setpoint":
+            if msg["chiee_des"] is not None:
+                ts_chiee_des_ls.append(time)
+                chiee_des_ls.append(
+                    np.array(
+                        [
+                            msg["chiee_des"]["x"],
+                            msg["chiee_des"]["y"],
+                            msg["chiee_des"]["theta"],
+                        ]
+                    )
+                )
+            if msg["q_des"] is not None:
+                ts_q_des_ls.append(time)
+                q_des_ls.append(
+                    np.array(
+                        [
+                            planar_setpoint["q_des"]["kappa_b"],
+                            planar_setpoint["q_des"]["sigma_sh"],
+                            planar_setpoint["q_des"]["sigma_a"],
+                        ]
+                    )
+                )
 
     for key, value in controller_info_ts.items():
         if len(value) == 0:
@@ -148,9 +177,13 @@ def main():
         "ts_q": np.array(ts_q_ls),
         "ts_q_d": np.array(ts_q_d_ls),
         "ts_chiee": np.array(ts_chiee_ls),
+        "ts_chiee_des": np.array(ts_chiee_des_ls),
+        "ts_q_des": np.array(ts_q_des_ls),
         "q_ts": np.stack(q_ls),
         "q_d_ts": np.stack(q_d_ls),
         "chiee_ts": np.stack(chiee_ls),
+        "chiee_des_ts": np.stack(chiee_des_ls),
+        "q_des_ts": np.stack(q_des_ls),
         "controller_info_ts": controller_info_ts,
     }
 
