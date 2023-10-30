@@ -76,6 +76,12 @@ class PlanarSimNode(Node):
         # CoG of the payload relative to end-effector
         self.declare_parameter("CoGpl", [0.0, 0.0])
         self.params["CoGpl"] = jnp.array(self.get_parameter("CoGpl").value)
+        # increase damping to make simulation more stable
+        self.declare_parameter("damping_multiplier", 1.0)
+        damping_multiplier = self.get_parameter("damping_multiplier").value
+        self.params["zetab"] = damping_multiplier * self.params["zetab"]
+        self.params["zetash"] = damping_multiplier * self.params["zetash"]
+        self.params["zetaa"] = damping_multiplier * self.params["zetaa"]
 
         # initialize forward kinematic functions
         self.forward_kinematics_end_effector_fn = jit(

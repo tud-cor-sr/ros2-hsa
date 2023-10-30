@@ -8,8 +8,9 @@ from rclpy.node import Node
 from rcl_interfaces.msg import ParameterDescriptor
 from pathlib import Path
 
-from sensor_msgs.msg import Joy
 from keyboard_msgs.msg import Key
+from sensor_msgs.msg import Joy
+from std_msgs.msg import Int32
 
 import yaml
 
@@ -89,7 +90,7 @@ class KeyboardToJoyNode(Node):
             )
 
         self.declare_parameter("sampling_frequency", 50)
-        hz = (
+        sampling_frequency = (
             self.get_parameter("sampling_frequency").get_parameter_value().integer_value
         )
 
@@ -122,15 +123,17 @@ class KeyboardToJoyNode(Node):
         if self.joy_control_mode == "cartesian_switch":
             self.declare_parameter("num_axes", 2)
             self.num_axes = self.get_parameter("num_axes").value
+            
+            # initialize activate direction as the x-axis
+            self.active_axis = 0
+            self.cartesian_switch_state_pub = self.create_publisher(
+                Int32, "cartesian_switch_state", qos.qos_profile_system_default
+            )
         else:
             self.num_axes = len(self.axes)
 
-        # initialize activate direction as the y-axis
-        # this only applies to the joy_control_mode == "cartesian_switch"
-        self.active_axis = 0
-
         # Start timer
-        dt = 1.0 / float(hz)
+        dt = 1.0 / float(sampling_frequency)
         self.create_timer(dt, self.main_loop)
 
     def keydown_callback(self, msg):
@@ -150,6 +153,9 @@ class KeyboardToJoyNode(Node):
 
     def main_loop(self):
         if self.joy_control_mode == "cartesian_switch":
+            # publish message with current Cartesian switch state
+            self.cartesian_switch_state_pub.publish(Int32(data=self.active_axis))
+
             joy_signal = []
             # we just consider the first keyboard axis as an input source
             ax = self.axes[0]
@@ -162,9 +168,10 @@ class KeyboardToJoyNode(Node):
             msg = Joy(
                 axes=[a.get() for a in self.axes], buttons=[b.get() for b in self.buttons]
             )
+
+        # publish Joy msg
         msg.header.stamp = self.get_clock().now().to_msg()
         self.joy_pub.publish(msg)
-
 
 def main(args=None):
     # Start node, and spin
