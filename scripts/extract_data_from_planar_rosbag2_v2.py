@@ -179,15 +179,18 @@ def main():
         "ts_q": np.array(ts_q_ls),
         "ts_q_d": np.array(ts_q_d_ls),
         "ts_chiee": np.array(ts_chiee_ls),
-        "ts_chiee_des": np.array(ts_chiee_des_ls),
-        "ts_q_des": np.array(ts_q_des_ls),
         "q_ts": np.stack(q_ls),
         "q_d_ts": np.stack(q_d_ls),
         "chiee_ts": np.stack(chiee_ls),
-        "chiee_des_ts": np.stack(chiee_des_ls),
-        "q_des_ts": np.stack(q_des_ls),
         "controller_info_ts": controller_info_ts,
     }
+
+    if len(ts_chiee_des_ls) > 0 and len(chiee_des_ls) > 0:
+        data_ts["ts_chiee_des"] = np.array(ts_chiee_des_ls)
+        data_ts["chiee_des_ts"] = np.stack(chiee_des_ls)
+    if len(ts_q_des_ls) > 0 and len(q_des_ls) > 0:
+        data_ts["ts_q_des"] = np.array(ts_q_des_ls)
+        data_ts["q_des_ts"] = np.stack(q_des_ls)
 
     # save data
     with open(str(ROSBAG2_PATH.with_suffix(".dill")), "wb") as f:
