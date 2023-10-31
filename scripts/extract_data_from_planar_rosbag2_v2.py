@@ -9,14 +9,16 @@ from pathlib import Path
 from tqdm import tqdm
 
 
-experiment_name = "20230925_142209"
+EXPERIMENT_ID = "20230925_142209"
+STORAGE_ID = "sqlite3"  # "sqlite3" or "mcap"
+
 ROSBAG2_PATH = Path(
-    f"/home/mstoelzle/phd/rosbags/rosbag2_{experiment_name}/rosbag2_{experiment_name}_0.db3"
+    f"/home/mstoelzle/phd/rosbags/rosbag2_{EXPERIMENT_ID}/rosbag2_{EXPERIMENT_ID}_0.{'db3' if STORAGE_ID == 'sqlite3' else 'mcap'}"
 )
 
 
 def main():
-    reader = nml_bag.Reader(str(ROSBAG2_PATH), storage_id="sqlite3")
+    reader = nml_bag.Reader(str(ROSBAG2_PATH), storage_id=STORAGE_ID)
 
     print("Available topics:\n", reader.topics)
 
@@ -161,9 +163,9 @@ def main():
                 q_des_ls.append(
                     np.array(
                         [
-                            planar_setpoint["q_des"]["kappa_b"],
-                            planar_setpoint["q_des"]["sigma_sh"],
-                            planar_setpoint["q_des"]["sigma_a"],
+                            msg["q_des"]["kappa_b"],
+                            msg["q_des"]["sigma_sh"],
+                            msg["q_des"]["sigma_a"],
                         ]
                     )
                 )
