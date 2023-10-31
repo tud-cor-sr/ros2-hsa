@@ -56,7 +56,8 @@ def main(args=None):
     rate = node.create_rate(freq)
 
     # history of samples
-    lhs = 35
+    node.declare_parameter("length_of_history", 50)
+    lhs = node.get_parameter("length_of_history").value
     t_hs = np.zeros((lhs, ))  # time associated with samples
     st1_hs = np.zeros((lhs, ))  # history of stimulations from classifier 1
     st2_hs = np.zeros((lhs, ))  # history of stimulations from classifier 2
