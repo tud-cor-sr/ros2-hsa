@@ -45,6 +45,7 @@ def main():
         "phi_des_unsat": [],
         "phi_des_sat": [],
         "motor_goal_angles": [],
+        "actuation_optimality_error": [],
     }
 
     for msg in tqdm(reader):
@@ -143,6 +144,12 @@ def main():
                 controller_info_ts["motor_goal_angles"].append(
                     np.array(msg["motor_goal_angles"])
                 )
+
+            if msg["actuation_optimality_error"] is not None:
+                controller_info_ts["actuation_optimality_error"].append(
+                    np.array(msg["actuation_optimality_error"])
+                )
+                
         elif topic == "/joy_signal":
             ts_joy_signal_ls.append(time)
             joy_signal_ls.append(msg["axes"])
