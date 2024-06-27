@@ -8,7 +8,6 @@ jax_config.update("jax_platform_name", "cpu")  # use CPU
 import jax
 from jax import Array, jit, vmap
 from jax import numpy as jnp
-import numderivax
 import rclpy
 from rclpy.node import Node
 from rclpy.time import Time
@@ -90,6 +89,7 @@ class PlanarHsaVelocityEstimatorNode(Node):
                 derivative.Spline(s=1.0, order=3).compute, i=-1
             )
         elif self.num_derivative_method == "numderivax_savitzky_golay":
+            import numderivax
             self.lhs4d = 25
             self.num_derivative_fn = jit(
                 vmap(
