@@ -18,10 +18,8 @@ class PlanarMotorBabblingNode(HsaActuationBaseNode):
         self.declare_parameter("mode", "gbn")  # gbn, sinusoidal_extension
         self.mode = self.get_parameter("mode").value
 
-        self.declare_parameter("phi_max", self.params["phi_max"].mean().item())
-        self.params["phi_max"] = self.get_parameter("phi_max").value * np.ones_like(
-            self.params["phi_max"]
-        )
+        self.declare_parameter("phi_max", np.pi)
+        self.phi_max = self.get_parameter("phi_max").value
 
         self.declare_parameter("duration", 60.0)
         self.duration = self.get_parameter("duration").value
