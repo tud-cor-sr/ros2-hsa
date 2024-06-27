@@ -24,6 +24,9 @@ class PlanarMotorBabblingNode(HsaActuationBaseNode):
         self.declare_parameter("duration", 60.0)
         self.duration = self.get_parameter("duration").value
 
+        self.declare_parameter("frequency", 0.1)
+        self.frequency = self.get_parameter("frequency").value
+
         self.seed = 0
         self.dt = 1 / self.node_frequency
 
@@ -54,18 +57,12 @@ class PlanarMotorBabblingNode(HsaActuationBaseNode):
                 )
                 self.u_ts[:, motor_idx] = (1 + u_gbn) / 2 * self.phi_max
         elif self.mode == "sinusoidal_extension":
-            # frequency of the sinusoidal signal
-            self.omega = 0.1  # [Hz]
-
             for motor_idx in range(2):
                 self.u_ts[:, motor_idx] = self.phi_max * (
-                    0.5 + 0.5 * np.sin(self.omega * 2 * np.pi * self.ts)
+                    0.5 + 0.5 * np.sin(self.frequency * 2 * np.pi * self.ts)
                 )
         elif self.mode == "sinusoidal_bending":
-            # frequency of the sinusoidal signal
-            self.omega = 0.1  # [Hz]
-
-            bending_ts = np.sin(self.omega * 2 * np.pi * self.ts)
+            bending_ts = np.sin(self.frequency * 2 * np.pi * self.ts)
 
             self.u_ts[:, 0] = self.phi_max * (0.5 + 0.5 * bending_ts)
             self.u_ts[:, 1] = self.phi_max * (0.5 - 0.5 * bending_ts)
