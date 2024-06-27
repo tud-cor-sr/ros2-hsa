@@ -15,11 +15,16 @@ class PlanarMotorBabblingNode(HsaActuationBaseNode):
         self.timer = self.create_timer(1.0 / self.node_frequency, self.timer_callback)
         self.time_idx = 0
 
+        self.declare_parameter("mode", "gbn")  # gbn, sinusoidal_extension
+        self.mode = self.get_parameter("mode").value
+
         self.seed = 0
-        self.mode = "gbn"
         self.duration = 45  # [s]
         self.dt = 1 / self.node_frequency
         self.phi_max = np.pi  # [deg]
+
+        self.ts = np.arange(0, self.duration, self.dt)
+        self.u_ts = np.zeros((self.ts.shape[0], 2))
 
         if self.mode == "gbn":
             from pygbn import gbn
@@ -34,7 +39,6 @@ class PlanarMotorBabblingNode(HsaActuationBaseNode):
 
             # generate the signal
             # the gbn function returns a time array and a signal array
-            self.u_ts = np.zeros((int(self.duration / self.dt), 2))
             for motor_idx in range(2):
                 u_gbn = gbn(
                     self.dt,
@@ -45,6 +49,14 @@ class PlanarMotorBabblingNode(HsaActuationBaseNode):
                     seed=self.seed + motor_idx,
                 )
                 self.u_ts[:, motor_idx] = (1 + u_gbn) / 2 * self.phi_max
+        elif self.mode == "sinusoidal_extension":
+            # frequency of the sinusoidal signal
+            self.omega = 0.1  # [Hz]
+
+            for motor_idx in range(2):
+                self.u_ts[:, motor_idx] = self.phi_max * (
+                    0.5 + 0.5 * np.sin(self.omega * 2 * np.pi * self.ts)
+                )
         else:
             raise ValueError("Unknown mode.")
 
