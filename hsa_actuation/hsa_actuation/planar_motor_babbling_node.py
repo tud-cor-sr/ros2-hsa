@@ -15,7 +15,7 @@ class PlanarMotorBabblingNode(HsaActuationBaseNode):
         self.timer = self.create_timer(1.0 / self.node_frequency, self.timer_callback)
         self.time_idx = 0
 
-        self.declare_parameter("mode", "gbn")  # gbn, sinusoidal_extension
+        self.declare_parameter("mode", "gbn")  # gbn, sinusoidal_extension, sinusoidal_bending
         self.mode = self.get_parameter("mode").value
 
         self.declare_parameter("phi_max", np.pi)
@@ -61,6 +61,15 @@ class PlanarMotorBabblingNode(HsaActuationBaseNode):
                 self.u_ts[:, motor_idx] = self.phi_max * (
                     0.5 + 0.5 * np.sin(self.omega * 2 * np.pi * self.ts)
                 )
+        elif self.mode == "sinusoidal_bending":
+            # frequency of the sinusoidal signal
+            self.omega = 0.1  # [Hz]
+
+            bending_ts = np.sin(self.omega * 2 * np.pi * self.ts)
+
+            self.u_ts[:, 0] = self.phi_max * (0.5 + 0.5 * bending_ts)
+            self.u_ts[:, 1] = self.phi_max * (0.5 - 0.5 * bending_ts)
+            
         else:
             raise ValueError("Unknown mode.")
 
@@ -72,9 +81,9 @@ class PlanarMotorBabblingNode(HsaActuationBaseNode):
 
         phi = np.stack(
             [
-                self.u_ts[self.time_idx, 0] * self.rod_handedness[0],
+                self.u_ts[self.time_idx, 1] * self.rod_handedness[0],
                 self.u_ts[self.time_idx, 1] * self.rod_handedness[1],
-                self.u_ts[self.time_idx, 1] * self.rod_handedness[2],
+                self.u_ts[self.time_idx, 0] * self.rod_handedness[2],
                 self.u_ts[self.time_idx, 0] * self.rod_handedness[3],
             ]
         )
@@ -86,7 +95,7 @@ class PlanarMotorBabblingNode(HsaActuationBaseNode):
 
 def main(args=None):
     rclpy.init(args=args)
-    print("Hi from hsa_motor_babbling.")
+    print("Hi from planar_motor_babbling_node.")
 
     node = PlanarMotorBabblingNode()
 
