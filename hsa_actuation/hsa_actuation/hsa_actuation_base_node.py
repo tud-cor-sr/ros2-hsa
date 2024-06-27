@@ -147,16 +147,19 @@ class HsaActuationBaseNode(Node):
             return self.present_motor_angles
 
         motor_positions = np.array(resp.positions, dtype=np.int32)
-        self.present_motor_positions = motor_positions
 
-        self.present_motor_angles = (
-            (motor_positions - self.motor_neutral_positions).astype(np.float64)
-            / 2048
-            * np.pi
-        )
-        self.present_motor_angles_pub.publish(
-            Float64MultiArray(data=self.present_motor_angles)
-        )
+        # when there are communication issues, the dynamixel sdk returns an empty motor position list
+        if motor_positions.shape[0] > 0:
+            self.present_motor_positions = motor_positions
+
+            self.present_motor_angles = (
+                (motor_positions - self.motor_neutral_positions).astype(np.float64)
+                / 2048
+                * np.pi
+            )
+            self.present_motor_angles_pub.publish(
+                Float64MultiArray(data=self.present_motor_angles)
+            )
 
         return self.present_motor_angles
 
